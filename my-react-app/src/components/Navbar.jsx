@@ -30,7 +30,7 @@ function Navbar() {
         }}
       >
         <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+          <Typography variant="h5" component="div" sx={{ flexGrow: 1 }}>
             오늘의 바깥
           </Typography>
           {/* 데스크탑 메뉴 */}
@@ -42,7 +42,7 @@ function Navbar() {
                 component={Link}
                 to={item.to}
                 size="large"
-                sx={{ fontSize: '1.2rem', px: 3 }}
+                sx={{ fontSize: '1.4rem', px: 3 }}
               >
                 {item.label}
               </Button>
