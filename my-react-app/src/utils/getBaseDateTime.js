@@ -1,3 +1,5 @@
+// 기상청 업데이트 시간 갱신하는 코드 
+
 export function getBaseDateTime() {
   const now = new Date();
 

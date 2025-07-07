@@ -45,6 +45,7 @@ function Weather() {
 
   const minTemp = getCategoryValue('TMN'); // 최저기온
   const maxTemp = getCategoryValue('TMX'); // 최고기온
+  const tmp = getCategoryValue('TMP'); // 현재기온 
   const cloud = getCategoryValue('CLD');  // 구름상태
   const rainType = getCategoryValue('PTY'); // 강수형태
   const sky = getCategoryValue('SKY');    // 하늘상태
@@ -71,11 +72,12 @@ function Weather() {
 
       <Card>
         <CardContent>
-          <Typography variant="body1">최저기온: {minTemp}°C</Typography>
-          <Typography variant="body1">최고기온: {maxTemp}°C</Typography>
-          <Typography variant="body1">구름상태: {cloud ?? '정보없음'}</Typography>
-          <Typography variant="body1">강수량: {rainMap[rainType] || '정보없음'}</Typography>
-          <Typography variant="body1">하늘상태: {skyMap[sky] || '정보없음'}</Typography>
+          <Typography variant="body1">최저기온: {minTemp}°C </Typography>
+          <Typography variant="body1">최고기온: {maxTemp}°C </Typography>
+          <Typography variant='body1'>현재기온: {tmp}°C </Typography>
+          <Typography variant="body1">구름상태: {cloud ?? '정보없음'} </Typography>
+          <Typography variant="body1">강수량: {rainMap[rainType] || '정보없음'} </Typography>
+          <Typography variant="body1">하늘상태: {skyMap[sky] || '정보없음'} </Typography>
         </CardContent>
       </Card>
     </Container>
