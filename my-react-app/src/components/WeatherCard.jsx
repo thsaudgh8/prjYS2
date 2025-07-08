@@ -4,11 +4,13 @@ import { fetchTodayMinMaxTemp, fetchCurrentConditions } from '../services/weathe
 import { useLocation } from '../hooks/useLocation.js';
 import { convertLatLonToGrid, convertSkyCode } from '../utils/convertGrid';
 
+// 오늘 날짜 구하는 함수
 const getTodayDate = () => {
   const now = new Date();
   return now.toISOString().slice(0, 10); // 'YYYY-MM-DD'
 };
 
+// 02시 이후인지 확인하는 함수
 const isAfter0200 = () => {
   const now = new Date();
   return now.getHours() >= 2;
@@ -34,7 +36,7 @@ const WeatherCard = () => {
       const todayDate = getTodayDate();
       const { nx, ny } = convertLatLonToGrid(location.lat, location.lon);
 
-      // 날짜가 바뀌었고 02:00 이후면 새로 API 갱신
+      // 날짜가 바뀌었고 02시 이후면 새로운 날로 초기화
       if (currentDateRef.current !== todayDate && isAfter0200()) {
         currentDateRef.current = todayDate;
         savedMaxRef.current = null;
@@ -48,11 +50,11 @@ const WeatherCard = () => {
       setSky(sky);
       setRain(rain);
 
-      // 초기 설정
+      // 초기 최고/최저는 TMX/TMN 기준
       if (savedMaxRef.current === null) savedMaxRef.current = apiMax;
       if (savedMinRef.current === null) savedMinRef.current = apiMin;
 
-      // 현재기온이 예보보다 높으면 최고기온 업데이트
+      // 현재기온 기준으로 최고/최저 갱신
       if (current !== null) {
         if (current > savedMaxRef.current) savedMaxRef.current = current;
         if (current < savedMinRef.current) savedMinRef.current = current;
@@ -65,7 +67,8 @@ const WeatherCard = () => {
 
     loadWeather();
 
-    const interval = setInterval(loadWeather, 60 * 60 * 1000); // 1시간마다 갱신
+    // 1시간마다 갱신
+    const interval = setInterval(loadWeather, 60 * 60 * 1000);
     return () => clearInterval(interval);
   }, [location, locLoading, locError]);
 
