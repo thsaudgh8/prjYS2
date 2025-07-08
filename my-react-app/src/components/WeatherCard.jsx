@@ -47,21 +47,22 @@ const WeatherCard = () => {
         {/* 온도 및 상태 정보 리스트 */}
         <Box>
           <Box display="flex" justifyContent="space-between" sx={{ fontSize: '1.2rem', mb: 1 }}>
-            <span>🌡️ 현재기온</span>
+            <span>현재🌡️</span>
             <strong>{currentTemp !== null ? `${currentTemp}℃` : '-'}</strong>
           </Box>
 
           <Box display="flex" justifyContent="space-between" sx={{ fontSize: '1.2rem', mb: 1 }}>
-            <span>🔺 최고기온</span>
+            <span>최고🔺</span>
             <strong>{maxTemp !== null ? `${maxTemp}℃` : '-'}</strong>
           </Box>
 
           <Box display="flex" justifyContent="space-between" sx={{ fontSize: '1.2rem', mb: 1 }}>
-            <span>🔻 최저기온</span>
+            <span>최저🔻</span>
             <strong>{minTemp !== null ? `${minTemp}℃` : '-'}</strong>
           </Box>
           <Box display="flex" justifyContent="space-between" sx={{ fontSize: '1.2rem', mb: 1 }}>
-            <span>🌧️ {pop === null ? '강수 없음' : `강수 확률: ${pop}%`}</span>
+            <span> {pop === null ? '강수 없음' : `강수 확률`}🌧️</span>
+            <strong> {pop === null ? '강수 없음' : `${pop}%`}</strong>
           </Box>
         </Box>
       </CardContent>
