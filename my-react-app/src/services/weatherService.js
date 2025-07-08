@@ -50,3 +50,46 @@ export async function fetchTodayMinMaxTemp(lat, lon) {
 
   return { maxTemp, minTemp };
 }
+
+
+const ULTRA_SHORT_URL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst';
+
+function getUltraBaseDateTime() {   // 기상청 초단기예보 기준 시간 계산
+  const now = new Date();
+  let baseDate = now.toISOString().slice(0, 10).replace(/-/g, '');
+
+  let hour = now.getHours();
+  let minute = now.getMinutes();
+
+  // 45분 전까지만 기준시간으로 인정됨
+  if (minute < 45) hour -= 1;
+  const baseTime = String(hour).padStart(2, '0') + '30';
+
+  return { baseDate, baseTime };
+}
+
+export async function fetchCurrentTemp(nx, ny) {    // 초단기예보 API를 사용하여 현재 기온을 가져오는 함수
+  const { baseDate, baseTime } = getUltraBaseDateTime();
+
+  const url = `${ULTRA_SHORT_URL}?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("초단기예보 API 요청 실패");
+
+  const data = await res.json();
+
+  if (
+    !data.response ||
+    !data.response.body ||
+    !data.response.body.items ||
+    !data.response.body.items.item
+  ) {
+    throw new Error("초단기예보 응답 구조 오류 또는 데이터 없음");
+  }
+
+  const items = data.response.body.items.item;
+
+  const tempItem = items.find(item => item.category === 'T1H');
+
+  return tempItem?.fcstValue ?? null;
+}

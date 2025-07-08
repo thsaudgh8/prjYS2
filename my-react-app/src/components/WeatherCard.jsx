@@ -3,7 +3,7 @@
 // components/WeatherCard.js
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, Typography, CircularProgress } from '@mui/material';
-import { fetchTodayMinMaxTemp } from '../services/weatherService';
+import { fetchTodayMinMaxTemp, fetchCurrentTemp } from '../services/weatherService';
 import { useLocation } from '../hooks/useLocation.js';
 import { convertLatLonToGrid } from '../utils/convertGrid';
 
@@ -14,6 +14,8 @@ const WeatherCard = () => {
   const [minTemp, setMinTemp] = useState(null);
   const [maxTemp, setMaxTemp] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [currentTemp, setCurrentTemp] = useState(null);
+
 
   useEffect(() => {
     if (locLoading || locError) return;
@@ -22,11 +24,14 @@ const WeatherCard = () => {
     const loadTemp = async () => {
       const { nx, ny } = convertLatLonToGrid(location.lat, location.lon);
       const { minTemp, maxTemp } = await fetchTodayMinMaxTemp(nx, ny);
+      const current = await fetchCurrentTemp(nx, ny);
 
       setMinTemp(minTemp);
       setMaxTemp(maxTemp);
+      setCurrentTemp(current);
       setLoading(false);
     };
+
 
     loadTemp();
   }, [location, locLoading, locError]);
@@ -67,6 +72,9 @@ const WeatherCard = () => {
           <CircularProgress />
         ) : (
           <>
+            <Typography variant="body1" sx={{ fontSize: '1.2rem', mb: 1 }}>
+              🌡️ 현재기온: <strong>{currentTemp}℃</strong>
+            </Typography>
             <Typography variant="body1" sx={{ fontSize: '1.2rem', mb: 1 }}>
               🌡️ 최고기온: <strong>{maxTemp}℃</strong>
             </Typography>
