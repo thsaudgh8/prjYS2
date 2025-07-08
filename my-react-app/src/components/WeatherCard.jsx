@@ -62,7 +62,6 @@ const WeatherCard = () => {
           </Box>
           <Box display="flex" justifyContent="space-between" sx={{ fontSize: '1.2rem', mb: 1 }}>
             <span>🌧️ {pop === null ? '강수 없음' : `강수 확률: ${pop}%`}</span>
-            {pop !== null && <strong>예상 강수량: {rain} mm</strong>}
           </Box>
         </Box>
       </CardContent>

@@ -1,70 +1,75 @@
-import { useEffect, useState, useRef } from 'react';
-import { fetchTodayMinMaxTemp, fetchCurrentConditions } from '../services/weatherService';
-import { convertLatLonToGrid } from '../utils/convertGrid'; // ✅ 이거 중요!
+import { useState, useEffect, useRef } from 'react';
+import { fetchTodayMinMaxTemp, fetchCurrentConditions, fetchTodayPop } from '../services/weatherService';
+import { useLocation } from './useLocation';
+import { convertLatLonToGrid } from '../utils/convertGrid';
 
-const getTodayDate = () => {
-  const now = new Date();
-  return now.toISOString().slice(0, 10);
+const getTodayDate = () => new Date().toISOString().slice(0, 10);
+const isAfter0200 = () => new Date().getHours() >= 2;
+
+export const useWeather = () => {
+  const { location, loading: locLoading, error: locError } = useLocation();
+  const [minTemp, setMinTemp] = useState(null);
+  const [maxTemp, setMaxTemp] = useState(null);
+  const [currentTemp, setCurrentTemp] = useState(null);
+  const [sky, setSky] = useState(null);
+  const [rain, setRain] = useState(null);
+  const [pop, setPop] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const savedMax = useRef(null);
+  const savedMin = useRef(null);
+  const currentDateRef = useRef(getTodayDate());
+
+  useEffect(() => {
+    if (locLoading || locError || !location.lat || !location.lon) return;
+
+    const loadWeather = async () => {
+      const today = getTodayDate();
+      const { nx, ny } = convertLatLonToGrid(location.lat, location.lon);
+
+      if (currentDateRef.current !== today && isAfter0200()) {
+        currentDateRef.current = today;
+        savedMax.current = null;
+        savedMin.current = null;
+      }
+
+      const [{ maxTemp: apiMax, minTemp: apiMin }, { temp, sky, rain }, pop] = await Promise.all([
+        fetchTodayMinMaxTemp(nx, ny),
+        fetchCurrentConditions(nx, ny),
+        fetchTodayPop(nx, ny),
+      ]);
+
+      setCurrentTemp(temp);
+      setSky(sky);
+      setRain(rain);
+      setPop(pop);
+
+      if (savedMax.current === null) savedMax.current = apiMax;
+      if (savedMin.current === null) savedMin.current = apiMin;
+
+      if (temp !== null) {
+        if (temp > savedMax.current) savedMax.current = temp;
+        if (temp < savedMin.current) savedMin.current = temp;
+      }
+
+      setMaxTemp(savedMax.current);
+      setMinTemp(savedMin.current);
+      setLoading(false);
+    };
+
+    loadWeather();
+    const interval = setInterval(loadWeather, 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [location, locLoading, locError]);
+
+  return {
+    loading,
+    error: locError,
+    currentTemp,
+    maxTemp,
+    minTemp,
+    sky,
+    rain,
+    pop,
+  };
 };
-
-const isAfter0200 = () => {
-  const now = new Date();
-  return now.getHours() >= 2;
-};
-
-
-export function useWeather(location, locLoading, locError) {
-    const [minTemp, setMinTemp] = useState(null);
-    const [maxTemp, setMaxTemp] = useState(null);
-    const [currentTemp, setCurrentTemp] = useState(null);
-    const [sky, setSky] = useState(null);
-    const [rain, setRain] = useState(null);
-    const [pop, setPop] = useState(null);  // 강수 확률 상태 추가
-    const [loading, setLoading] = useState(true);
-
-    const savedMaxRef = useRef(null);
-    const savedMinRef = useRef(null);
-    const currentDateRef = useRef(getTodayDate());
-
-    useEffect(() => {
-        if (locLoading || locError || !location?.lat || !location?.lon) return;
-
-        const loadWeather = async () => {
-            const todayDate = getTodayDate();
-            const { nx, ny } = convertLatLonToGrid(location.lat, location.lon);
-
-            if (currentDateRef.current !== todayDate && isAfter0200()) {
-                currentDateRef.current = todayDate;
-                savedMaxRef.current = null;
-                savedMinRef.current = null;
-            }
-
-            const { minTemp: apiMin, maxTemp: apiMax } = await fetchTodayMinMaxTemp(nx, ny);
-            const { temp: current, sky, rain, pop } = await fetchCurrentConditions(nx, ny);
-
-            setCurrentTemp(current);
-            setSky(sky);
-            setRain(rain);
-            setPop(pop);  // 강수 확률 저장
-
-            if (savedMaxRef.current === null) savedMaxRef.current = apiMax;
-            if (savedMinRef.current === null) savedMinRef.current = apiMin;
-
-            if (current !== null) {
-                if (current > savedMaxRef.current) savedMaxRef.current = current;
-                if (current < savedMinRef.current) savedMinRef.current = current;
-            }
-
-            setMaxTemp(savedMaxRef.current);
-            setMinTemp(savedMinRef.current);
-            setLoading(false);
-        };
-
-        loadWeather();
-
-        const interval = setInterval(loadWeather, 60 * 60 * 1000);
-        return () => clearInterval(interval);
-    }, [location, locLoading, locError]);
-
-    return { minTemp, maxTemp, currentTemp, sky, rain, pop, loading };
-}
