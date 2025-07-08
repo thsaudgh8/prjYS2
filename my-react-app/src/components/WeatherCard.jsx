@@ -6,7 +6,7 @@ import { convertSkyCode } from '../utils/convertGrid';
 
 const WeatherCard = () => {
   const { location, loading: locLoading, error: locError } = useLocation();
-  const { minTemp, maxTemp, currentTemp, sky, rain, loading } = useWeather(location, locLoading, locError);
+  const { minTemp, maxTemp, currentTemp, sky, rain, pop, loading } = useWeather(location, locLoading, locError);
 
   if (locLoading || loading) {
     return (
@@ -46,8 +46,8 @@ const WeatherCard = () => {
         <Typography variant="body1" sx={{ fontSize: '1.2rem', mb: 1 }}>
           🌤️ 하늘 상태: <strong>{convertSkyCode(sky)}</strong>
         </Typography>
-        <Typography variant="body1" sx={{ fontSize: '1.2rem' }}>
-          🌧️ 강수량: <strong>{rain} mm</strong>
+        <Typography variant="body1" sx={{ fontSize: '1.2rem', mb: 1 }}>
+          🌧️ {pop === null ? (<>강수 없음</>) : (<>강수 확률: {pop}%{rain !== null && <> / 예상 강수량: {rain} mm</>}</>)}
         </Typography>
       </CardContent>
     </Card>

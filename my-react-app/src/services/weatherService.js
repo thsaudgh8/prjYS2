@@ -67,7 +67,6 @@ function getUltraBaseDateTime() {   // 기상청 초단기예보 기준 시간 �
 
   return { baseDate, baseTime };
 }
-
 export async function fetchCurrentConditions(nx, ny) {
   const { baseDate, baseTime } = getUltraBaseDateTime();
 
@@ -96,5 +95,6 @@ export async function fetchCurrentConditions(nx, ny) {
     temp: getValue('T1H'),
     sky: getValue('SKY'),
     rain: getValue('RN1'),
+    pop: getValue('POP'), // 강수 확률 추가
   };
 }
