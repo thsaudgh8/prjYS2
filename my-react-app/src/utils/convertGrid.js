@@ -36,3 +36,13 @@ export function convertLatLonToGrid(lat, lon) {
   rs['y'] = Math.floor(ro - ra * Math.cos(theta) + YO + 0.5);
   return { nx: rs.x, ny: rs.y };
 }
+
+
+export function convertSkyCode(code) {  // 기상청 하늘상태 코드 변환 함수  
+  switch (parseInt(code)) {
+    case 1: return '☀️ 맑음';
+    case 3: return '⛅ 구름 많음';
+    case 4: return '☁️ 흐림';
+    default: return '❓ 알 수 없음';
+  }
+}

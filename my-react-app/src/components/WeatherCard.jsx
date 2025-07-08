@@ -3,9 +3,10 @@
 // components/WeatherCard.js
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, Typography, CircularProgress } from '@mui/material';
-import { fetchTodayMinMaxTemp, fetchCurrentTemp } from '../services/weatherService';
+import { fetchTodayMinMaxTemp, fetchCurrentConditions } from '../services/weatherService';
 import { useLocation } from '../hooks/useLocation.js';
-import { convertLatLonToGrid } from '../utils/convertGrid';
+import { convertLatLonToGrid, convertSkyCode } from '../utils/convertGrid';
+
 
 
 
@@ -15,6 +16,8 @@ const WeatherCard = () => {
   const [maxTemp, setMaxTemp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentTemp, setCurrentTemp] = useState(null);
+  const [sky, setSky] = useState(null);
+  const [rain, setRain] = useState(null);
 
 
   useEffect(() => {
@@ -24,14 +27,15 @@ const WeatherCard = () => {
     const loadTemp = async () => {
       const { nx, ny } = convertLatLonToGrid(location.lat, location.lon);
       const { minTemp, maxTemp } = await fetchTodayMinMaxTemp(nx, ny);
-      const current = await fetchCurrentTemp(nx, ny);
+      const { temp, sky, rain } = await fetchCurrentConditions(nx, ny);
 
       setMinTemp(minTemp);
       setMaxTemp(maxTemp);
-      setCurrentTemp(current);
+      setCurrentTemp(temp);
+      setSky(sky);
+      setRain(rain);
       setLoading(false);
     };
-
 
     loadTemp();
   }, [location, locLoading, locError]);
@@ -76,10 +80,16 @@ const WeatherCard = () => {
               🌡️ 현재기온: <strong>{currentTemp}℃</strong>
             </Typography>
             <Typography variant="body1" sx={{ fontSize: '1.2rem', mb: 1 }}>
-              🌡️ 최고기온: <strong>{maxTemp}℃</strong>
+              🔺 최고기온: <strong>{maxTemp}℃</strong>
+            </Typography>
+            <Typography variant="body1" sx={{ fontSize: '1.2rem', mb: 1 }}>
+              🔻 최저기온: <strong>{minTemp}℃</strong>
+            </Typography>
+            <Typography variant="body1" sx={{ fontSize: '1.2rem', mb: 1 }}>
+              🌤️ 하늘 상태: <strong>{convertSkyCode(sky)}</strong>
             </Typography>
             <Typography variant="body1" sx={{ fontSize: '1.2rem' }}>
-              ❄️ 최저기온: <strong>{minTemp}℃</strong>
+              🌧️ 강수량: <strong>{rain} mm</strong>
             </Typography>
           </>
         )}

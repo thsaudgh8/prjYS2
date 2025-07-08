@@ -68,7 +68,7 @@ function getUltraBaseDateTime() {   // 기상청 초단기예보 기준 시간 �
   return { baseDate, baseTime };
 }
 
-export async function fetchCurrentTemp(nx, ny) {    // 초단기예보 API를 사용하여 현재 기온을 가져오는 함수
+export async function fetchCurrentConditions(nx, ny) {
   const { baseDate, baseTime } = getUltraBaseDateTime();
 
   const url = `${ULTRA_SHORT_URL}?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=100&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
@@ -89,7 +89,12 @@ export async function fetchCurrentTemp(nx, ny) {    // 초단기예보 API를 �
 
   const items = data.response.body.items.item;
 
-  const tempItem = items.find(item => item.category === 'T1H');
+  const getValue = (category) =>
+    items.find((item) => item.category === category)?.fcstValue ?? null;
 
-  return tempItem?.fcstValue ?? null;
+  return {
+    temp: getValue('T1H'),
+    sky: getValue('SKY'),
+    rain: getValue('RN1'),
+  };
 }
