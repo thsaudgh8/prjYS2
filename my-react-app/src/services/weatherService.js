@@ -29,13 +29,24 @@ function getBaseDateTime() {
   return { baseDate, baseTime };
 }
 
-export async function fetchTodayMinMaxTemp(nx, ny) {
+export async function fetchTodayMinMaxTemp(lat, lon) {
   const { baseDate, baseTime } = getBaseDateTime();
 
-  const url = `${BASE_URL}?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=400&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
+  const url = `${BASE_URL}?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=400&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${lat}&ny=${lon}`;
 
   const res = await fetch(url);
+  if (!res.ok) throw new Error("API 요청 실패");
   const data = await res.json();
+
+  // 방어적 체크
+  if (
+    !data.response ||
+    !data.response.body ||
+    !data.response.body.items ||
+    !data.response.body.items.item
+  ) {
+    throw new Error("API 데이터 구조 오류 또는 데이터 없음");
+  }
 
   const items = data.response.body.items.item;
 
