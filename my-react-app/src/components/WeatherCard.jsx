@@ -1,70 +1,100 @@
-import React from 'react';
-import { Card, CardContent, Typography, Box, Divider } from '@mui/material';
-import { useLocation } from '../hooks/useLocation.js';
-import { useWeather } from '../hooks/useWeather.js';
-import { convertSkyCode } from '../utils/convertGrid';
-import WeatherIcon from './WeatherIcon';
+import React, { useEffect, useState } from 'react';
+import {
+  Card,
+  CardContent,
+  Typography,
+  CircularProgress,
+  Box,
+  Divider,
+} from '@mui/material';
+import { useLocation } from '../hooks/useLocation';
+import { convertLatLonToGrid } from '../utils/convertGrid';
+import { fetchMinMaxTemp, fetchLatestWeatherConditions } from '../services/weatherService';
+import WeatherIcon from './WeatherIcon';  // 여기서 임포트
 
 const WeatherCard = () => {
   const { location, loading: locLoading, error: locError } = useLocation();
-  const { minTemp, maxTemp, currentTemp, sky, rain, pop, loading } = useWeather(location, locLoading, locError);
+  const [minMaxTemp, setMinMaxTemp] = useState({ minTemp: null, maxTemp: null });
+  const [conditions, setConditions] = useState({ pop: null, pty: null, sky: null, rain: null });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (locLoading || locError) return;
+    const { lat, lon } = location;
+    if (!lat || !lon) return;
+
+    const { nx, ny } = convertLatLonToGrid(lat, lon);
+
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const temps = await fetchMinMaxTemp(nx, ny);
+        const cond = await fetchLatestWeatherConditions(nx, ny);
+
+        setMinMaxTemp(temps);
+        setConditions(cond);
+        setError(null);
+      } catch (e) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [locLoading, locError, location]);
 
   if (locLoading || loading) {
     return (
-      <Card sx={{ maxWidth: 400, margin: '2rem auto', boxShadow: 3, textAlign: 'center' }}>
+      <Card sx={{ maxWidth: 360, margin: '20px auto', padding: 3 }}>
         <CardContent>
-          <Typography variant="h5" gutterBottom>오늘의 기온</Typography>
-          <Typography>데이터를 불러오는 중입니다...</Typography>
+          <Box display="flex" justifyContent="center" alignItems="center" minHeight={120}>
+            <CircularProgress />
+          </Box>
         </CardContent>
       </Card>
     );
   }
 
-  if (locError) {
+  if (locError || error) {
     return (
-      <Card sx={{ maxWidth: 400, margin: '2rem auto', boxShadow: 3, textAlign: 'center' }}>
+      <Card sx={{ maxWidth: 360, margin: '20px auto', padding: 3 }}>
         <CardContent>
-          <Typography variant="h5" gutterBottom>오늘의 기온</Typography>
-          <Typography color="error">{locError}</Typography>
+          <Typography color="error" align="center">
+            에러: {locError || error}
+          </Typography>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card sx={{ maxWidth: 400, margin: '2rem auto', boxShadow: 3 }}>
-      <CardContent sx={{ textAlign: 'center' }}>
-        {/* 날씨 아이콘 크게 */}
-        <Box sx={{ mb: 2 }}>
-          <WeatherIcon skyCode={sky} rain={rain} />
-          <Typography variant="h6" sx={{ mt: 1 }}>
-            {convertSkyCode(sky)} {rain !== null && Number(rain) > 0 ? '☔️ 비' : ''}
-          </Typography>
+    <Card sx={{ maxWidth: 360, margin: '20px auto', padding: 3, boxShadow: 3 }}>
+      <CardContent>
+        {/* 상단부: WeatherIcon 크게 보여주기 */}
+        <Box display="flex" justifyContent="center" mb={3}>
+          <WeatherIcon skyCode={conditions.sky} rain={conditions.rain} />
         </Box>
 
-        <Divider sx={{ mb: 2 }} />
+        <Typography variant="h6" align="center" gutterBottom>
+          오늘의 날씨
+        </Typography>
 
-        {/* 온도 및 상태 정보 리스트 */}
-        <Box>
-          <Box display="flex" justifyContent="space-between" sx={{ fontSize: '1.2rem', mb: 1 }}>
-            <span>현재🌡️</span>
-            <strong>{currentTemp !== null ? `${currentTemp}℃` : '-'}</strong>
-          </Box>
+        <Divider sx={{ marginBottom: 2 }} />
 
-          <Box display="flex" justifyContent="space-between" sx={{ fontSize: '1.2rem', mb: 1 }}>
-            <span>최고🔺</span>
-            <strong>{maxTemp !== null ? `${maxTemp}℃` : '-'}</strong>
-          </Box>
-
-          <Box display="flex" justifyContent="space-between" sx={{ fontSize: '1.2rem', mb: 1 }}>
-            <span>최저🔻</span>
-            <strong>{minTemp !== null ? `${minTemp}℃` : '-'}</strong>
-          </Box>
-          <Box display="flex" justifyContent="space-between" sx={{ fontSize: '1.2rem', mb: 1 }}>
-            <span> {pop === null ? '강수 없음' : `강수 확률`}🌧️</span>
-            <strong> {pop === null ? '강수 없음' : `${pop}%`}</strong>
-          </Box>
-        </Box>
+        <Typography variant="body1" sx={{ marginBottom: 1 }}>
+          최고기온: <strong>{minMaxTemp.maxTemp ?? '정보 없음'}°C</strong>
+        </Typography>
+        <Typography variant="body1" sx={{ marginBottom: 1 }}>
+          최저기온: <strong>{minMaxTemp.minTemp ?? '정보 없음'}°C</strong>
+        </Typography>
+        <Typography variant="body1" sx={{ marginBottom: 1 }}>
+          강수확률: <strong>{conditions.pop ?? '정보 없음'}%</strong>
+        </Typography>
+        <Typography variant="body1" sx={{ marginBottom: 1 }}>
+          강수형태: <strong>{conditions.pty ?? '정보 없음'}</strong>
+        </Typography>
       </CardContent>
     </Card>
   );
