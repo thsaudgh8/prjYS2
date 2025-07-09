@@ -105,5 +105,8 @@ export async function fetchLatestWeatherConditions(nx, ny) {
     conditions[category.toLowerCase()] = found ? found.fcstValue : null;
   });
 
-  return conditions; // { pop, pty, sky }
+  // 여기서 pty 값을 rain으로 복사
+  conditions.rain = conditions.pty;
+
+  return conditions; // { pop, pty, sky, rain }
 }

@@ -10,7 +10,25 @@ import {
 import { useLocation } from '../hooks/useLocation';
 import { convertLatLonToGrid } from '../utils/convertGrid';
 import { fetchMinMaxTemp, fetchLatestWeatherConditions } from '../services/weatherService';
-import WeatherIcon from './WeatherIcon';  // 여기서 임포트
+import WeatherIcon from './WeatherIcon';
+
+// 강수형태 PTY 숫자 코드를 한국어 텍스트로 변환하는 함수
+const convertPtyToText = (pty) => {
+  switch (Number(pty)) {
+    case 0:
+      return '없음';
+    case 1:
+      return '비';
+    case 2:
+      return '비/눈';
+    case 3:
+      return '눈';
+    case 4:
+      return '소나기';
+    default:
+      return '알 수 없음';
+  }
+};
 
 const WeatherCard = () => {
   const { location, loading: locLoading, error: locError } = useLocation();
@@ -72,7 +90,6 @@ const WeatherCard = () => {
   return (
     <Card sx={{ maxWidth: 360, margin: '20px auto', padding: 3, boxShadow: 3 }}>
       <CardContent>
-        {/* 상단부: WeatherIcon 크게 보여주기 */}
         <Box display="flex" justifyContent="center" mb={3}>
           <WeatherIcon skyCode={conditions.sky} rain={conditions.rain} />
         </Box>
@@ -92,9 +109,11 @@ const WeatherCard = () => {
         <Typography variant="body1" sx={{ marginBottom: 1 }}>
           강수확률: <strong>{conditions.pop ?? '정보 없음'}%</strong>
         </Typography>
-        <Typography variant="body1" sx={{ marginBottom: 1 }}>
-          강수형태: <strong>{conditions.pty ?? '정보 없음'}</strong>
-        </Typography>
+        {conditions.pty !== '0' && (
+          <Typography variant="body1" sx={{ marginBottom: 1 }}>
+            강수형태: <strong>{convertPtyToText(conditions.pty)}</strong>
+          </Typography>
+        )}
       </CardContent>
     </Card>
   );
