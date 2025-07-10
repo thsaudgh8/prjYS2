@@ -1,17 +1,21 @@
 /* WeatherPage.module.css */
 
 .container {
+  width: 80%;
+  margin: 0 auto;
   display: flex;
+  flex-direction: row; /* 기본은 좌우 배치 */
   padding-top: 64px;
   height: calc(100vh - 64px);
   box-sizing: border-box;
+  gap: 12px; /* 아이템 사이 간격 */
 }
 
 .left {
   width: 50%;
   padding: 1rem;
   border-right: 1px solid #ccc;
-  /* 추후 지도, 검색 등 */
+  box-sizing: border-box;
 }
 
 .right {
@@ -21,4 +25,23 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  box-sizing: border-box;
+}
+
+/* 화면이 768px 이하일 때 반응형 */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column; /* 위아래 쌓임 */
+    height: auto; /* 높이 자동 조절 */
+  }
+
+  .left, .right {
+    width: 100%; /* 너비 100% */
+    border-right: none; /* 우측 테두리 제거 */
+    border-bottom: 1px solid #ccc; /* 아래쪽 구분선 추가 */
+  }
+
+  .right {
+    border-bottom: none; /* 마지막 영역이라 아래 구분선 없음 */
+  }
 }
