@@ -71,7 +71,7 @@ const WeatherCard = () => {
 
   if (locLoading || loading) {
     return (
-      <Card sx={{ maxWidth: 360, margin: '20px auto', padding: 3 }}>
+      <Card sx={{ maxWidth: 600, margin: '20px auto', padding: 3 }}>
         <CardContent>
           <Box display="flex" justifyContent="center" alignItems="center" minHeight={120}>
             <CircularProgress />
@@ -83,7 +83,7 @@ const WeatherCard = () => {
 
   if (locError || error) {
     return (
-      <Card sx={{ maxWidth: 360, margin: '20px auto', padding: 3 }}>
+      <Card sx={{ maxWidth: 600, margin: '20px auto', padding: 3 }}>
         <CardContent>
           <Typography color="error" align="center">
             에러: {locError || error}
@@ -98,71 +98,57 @@ const WeatherCard = () => {
 
     if (rainCode > 0) {
       switch (rainCode) {
-        case 1: return '우산 챙기세요, 비가 와요!';
-        case 2: return '비와 눈이 함께 와요!';
-        case 3: return '눈이 내려요!';
-        case 4: return '소나기 조심하세요!';
-        default: return '비 오는 날이에요!';
+        case 1:
+          return '우산 챙기세요, 비가 와요!';
+        case 2:
+          return '비와 눈이 함께 와요!';
+        case 3:
+          return '눈이 내려요!';
+        case 4:
+          return '소나기 조심하세요!';
+        default:
+          return '비 오는 날이에요!';
       }
     }
 
     switch (String(sky)) {
-      case '1': return '맑은 날이에요!';
-      case '3': return '조금 흐린 날이에요';
-      case '4': return '흐린 하루가 예상돼요';
-      default: return '날씨 정보를 불러오고 있어요';
+      case '1':
+        return '맑은 날이에요!';
+      case '3':
+        return '조금 흐린 날이에요';
+      case '4':
+        return '흐린 하루가 예상돼요';
+      default:
+        return '날씨 정보를 불러오고 있어요';
     }
   };
 
   return (
-    <Card sx={{ maxWidth: 360, margin: '20px auto', padding: 3, boxShadow: 3 }}>
-      <CardContent>
-        {/* 오늘 날짜 */}
-        <Typography variant="h3" align="center" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
-          {getTodayDateString()}
-        </Typography>
-
-        {/* 날씨 아이콘 */}
-        <Box display="flex" justifyContent="center" mb={3}>
-          <WeatherIcon skyCode={conditions.sky} rain={conditions.rain} />
+    <Card sx={{ maxWidth: 600, margin: '20px auto', padding: 3, boxShadow: 3 }}>
+      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+        {/* 아이콘 */}
+        <Box>
+          <WeatherIcon skyCode={conditions.sky} rain={conditions.rain} sx={{ fontSize: 100 }} />
         </Box>
 
-        {/* 날씨 메시지 */}
-        <Typography variant="h6" align="center" gutterBottom>
-          {getWeatherMessage(conditions.sky, conditions.rain)}
-        </Typography>
-
-        <Divider sx={{ marginBottom: 2 }} />
-
-        {/* 최고/최저 기온 + 강수 정보 */}
-        <Box display="flex" flexDirection="column" alignItems="center" mb={2}>
-          <Box display="flex" justifyContent="center" gap={2}>
-            <Typography variant="h5" sx={{ color: 'red', fontWeight: 'bold' }}>
-              {minMaxTemp.maxTemp ?? '--'}
-            </Typography>
-            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>/</Typography>
-            <Typography variant="h5" sx={{ color: 'blue', fontWeight: 'bold' }}>
-              {minMaxTemp.minTemp ?? '--'}
-            </Typography>
-          </Box>
-
-          {/* 강수확률 */}
-          <Typography
-            variant="body1"
-            sx={{ marginTop: 1, color: '#6ea8ff', fontSize: '1.2rem', textAlign: 'center' }}
-          >
-            강수확률: <strong>{conditions.pop ?? '정보 없음'}%</strong>
+        {/* 텍스트 정보 */}
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: 'bold', marginBottom: 1 }}>
+            {getTodayDateString()}
           </Typography>
 
-          {/* 강수형태 */}
-          {conditions.pty !== '0' && (
-            <Typography
-              variant="body1"
-              sx={{ color: '#6ea8ff', fontSize: '1.2rem', textAlign: 'center' }}
-            >
-              강수형태: <strong>{convertPtyToText(conditions.pty)}</strong>
-            </Typography>
-          )}
+          <Typography variant="body1" sx={{ marginBottom: 1 }}>
+            {getWeatherMessage(conditions.sky, conditions.rain)}
+          </Typography>
+
+          <Typography variant="body1" sx={{ marginBottom: 1 }}>
+            최고 온도: <strong style={{ color: 'red' }}>{minMaxTemp.maxTemp ?? '--'}°</strong> / 최저 온도:{' '}
+            <strong style={{ color: 'blue' }}>{minMaxTemp.minTemp ?? '--'}°</strong>
+          </Typography>
+
+          <Typography variant="body1" sx={{ color: '#6ea8ff' }}>
+            강수 확률: <strong>{conditions.pop ?? '정보 없음'}%</strong>
+          </Typography>
         </Box>
       </CardContent>
     </Card>

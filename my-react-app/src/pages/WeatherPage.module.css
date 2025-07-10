@@ -1,21 +1,8 @@
-/* WeatherPage.module.css */
-
 .container {
   display: flex;
-  padding-top: 64px;
-  height: calc(100vh - 64px);
+  justify-content: center; /* 가운데 정렬 */
+  align-items: center;
+  height: 100vh; /* 화면 높이 꽉 채움 */
+  padding: 20px;
   box-sizing: border-box;
-}
-
-.left {
-  width: 50%;
-  padding: 1rem;
-  overflow-y: auto;
-  border-right: 1px solid #ccc;
-}
-
-.right {
-  width: 50%;
-  padding: 1rem;
-  overflow-y: auto;
 }

@@ -112,3 +112,68 @@ export async function fetchLatestWeatherConditions(nx, ny) {
 
   return conditions; // { pop, pty, sky, rain }
 }
+
+
+export async function fetchDailyWeatherData(nx, ny, dailyDates) {
+  const BASE_URL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst';
+
+  // 7/11, 7/12는 baseDate, baseTime 기준으로 데이터 여러개가 있으니
+  // 최근 baseDate/baseTime을 구해서 API 호출 (ex. getLatestBaseDateTime 함수 참고)
+  const { baseDate, baseTime } = getLatestBaseDateTime();
+
+  const url = `${BASE_URL}?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('일별 단기예보 API 요청 실패');
+  const data = await res.json();
+  const items = data.response?.body?.items?.item ?? [];
+
+  // dailyDates 배열을 Set으로 만들기 (빠른 검색용)
+  const dateSet = new Set(dailyDates);
+
+  // 각 날짜별 데이터 객체 생성
+  const dailyData = {};
+
+  // 최대/최저기온 저장용
+  dailyDates.forEach((date) => {
+    dailyData[date] = {
+      date,
+      maxTemp: null,
+      minTemp: null,
+      sky: null,
+      rain: null,
+      pty: null,
+      pop: null,
+    };
+  });
+
+  // API에서 받은 items 중 날짜가 dailyDates에 포함된 데이터만 필터 및 가공
+  items.forEach((item) => {
+    if (!dateSet.has(item.fcstDate)) return;
+
+    const dayData = dailyData[item.fcstDate];
+    switch (item.category) {
+      case 'TMX':
+        dayData.maxTemp = item.fcstValue;
+        break;
+      case 'TMN':
+        dayData.minTemp = item.fcstValue;
+        break;
+      case 'SKY':
+        dayData.sky = item.fcstValue;
+        break;
+      case 'PTY':
+        dayData.pty = item.fcstValue;
+        dayData.rain = item.fcstValue; // rain 복사
+        break;
+      case 'POP':
+        dayData.pop = item.fcstValue;
+        break;
+      default:
+        break;
+    }
+  });
+
+  // 배열로 반환
+  return dailyDates.map((date) => dailyData[date]);
+}
