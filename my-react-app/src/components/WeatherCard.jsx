@@ -124,7 +124,7 @@ const WeatherCard = () => {
   };
 
   return (
-    <Card sx={{ maxWidth: 600, margin: '20px auto', padding: 3, boxShadow: 3 }}>
+    <Card sx={{ maxWidth: 600, margin: '10px', padding: 3, boxShadow: 3 }}>
       <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
         {/* 아이콘 */}
         <Box>
