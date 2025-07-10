@@ -29,7 +29,6 @@ const convertPtyToText = (pty) => {
   }
 };
 
-// 오늘 날짜 구하는 함수
 const getTodayDateString = () => {
   const today = new Date();
   return `${today.getMonth() + 1} / ${today.getDate()}`;
@@ -117,40 +116,52 @@ const WeatherCard = () => {
     <Card sx={{ maxWidth: 360, margin: '20px auto', padding: 3, boxShadow: 3 }}>
       <CardContent>
         {/* 오늘 날짜 */}
-        <Typography variant="subtitle1" align="center" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
+        <Typography variant="h3" align="center" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
           {getTodayDateString()}
         </Typography>
 
+        {/* 날씨 아이콘 */}
         <Box display="flex" justifyContent="center" mb={3}>
           <WeatherIcon skyCode={conditions.sky} rain={conditions.rain} />
         </Box>
 
+        {/* 날씨 메시지 */}
         <Typography variant="h6" align="center" gutterBottom>
           {getWeatherMessage(conditions.sky, conditions.rain)}
         </Typography>
 
         <Divider sx={{ marginBottom: 2 }} />
 
-        {/* 최고/최저 온도 빨강/파랑 */}
-        <Box display="flex" justifyContent="center" gap={2} mb={2}>
-          <Typography variant="h5" sx={{ color: 'red', fontWeight: 'bold' }}>
-            {minMaxTemp.maxTemp ?? '--'}
-          </Typography>
-          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>/</Typography>
-          <Typography variant="h5" sx={{ color: 'blue', fontWeight: 'bold' }}>
-            {minMaxTemp.minTemp ?? '--'}
-          </Typography>
-        </Box>
+        {/* 최고/최저 기온 + 강수 정보 */}
+        <Box display="flex" flexDirection="column" alignItems="center" mb={2}>
+          <Box display="flex" justifyContent="center" gap={2}>
+            <Typography variant="h5" sx={{ color: 'red', fontWeight: 'bold' }}>
+              {minMaxTemp.maxTemp ?? '--'}
+            </Typography>
+            <Typography variant="h5" sx={{ fontWeight: 'bold' }}>/</Typography>
+            <Typography variant="h5" sx={{ color: 'blue', fontWeight: 'bold' }}>
+              {minMaxTemp.minTemp ?? '--'}
+            </Typography>
+          </Box>
 
-        {/* 강수확률 */}
-        <Typography variant="body1" sx={{ marginBottom: 1 }}>
-          강수확률: <strong>{conditions.pop ?? '정보 없음'}%</strong>
-        </Typography>
-        {conditions.pty !== '0' && (
-          <Typography variant="body1" sx={{ marginBottom: 1 }}>
-            강수형태: <strong>{convertPtyToText(conditions.pty)}</strong>
+          {/* 강수확률 */}
+          <Typography
+            variant="body1"
+            sx={{ marginTop: 1, color: '#6ea8ff', fontSize: '1.2rem', textAlign: 'center' }}
+          >
+            강수확률: <strong>{conditions.pop ?? '정보 없음'}%</strong>
           </Typography>
-        )}
+
+          {/* 강수형태 */}
+          {conditions.pty !== '0' && (
+            <Typography
+              variant="body1"
+              sx={{ color: '#6ea8ff', fontSize: '1.2rem', textAlign: 'center' }}
+            >
+              강수형태: <strong>{convertPtyToText(conditions.pty)}</strong>
+            </Typography>
+          )}
+        </Box>
       </CardContent>
     </Card>
   );
