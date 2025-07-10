@@ -12,7 +12,6 @@ import { convertLatLonToGrid } from '../utils/convertGrid';
 import { fetchMinMaxTemp, fetchLatestWeatherConditions } from '../services/weatherService';
 import WeatherIcon from './WeatherIcon';
 
-// 강수형태 PTY 숫자 코드를 한국어 텍스트로 변환하는 함수
 const convertPtyToText = (pty) => {
   switch (Number(pty)) {
     case 0:
@@ -28,6 +27,12 @@ const convertPtyToText = (pty) => {
     default:
       return '알 수 없음';
   }
+};
+
+// 오늘 날짜 구하는 함수
+const getTodayDateString = () => {
+  const today = new Date();
+  return `${today.getMonth() + 1} / ${today.getDate()}`;
 };
 
 const WeatherCard = () => {
@@ -86,6 +91,7 @@ const WeatherCard = () => {
       </Card>
     );
   }
+
   const getWeatherMessage = (sky, rain) => {
     const rainCode = Number(rain);
 
@@ -110,6 +116,11 @@ const WeatherCard = () => {
   return (
     <Card sx={{ maxWidth: 360, margin: '20px auto', padding: 3, boxShadow: 3 }}>
       <CardContent>
+        {/* 오늘 날짜 */}
+        <Typography variant="subtitle1" align="center" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
+          {getTodayDateString()}
+        </Typography>
+
         <Box display="flex" justifyContent="center" mb={3}>
           <WeatherIcon skyCode={conditions.sky} rain={conditions.rain} />
         </Box>
@@ -120,12 +131,18 @@ const WeatherCard = () => {
 
         <Divider sx={{ marginBottom: 2 }} />
 
-        <Typography variant="body1" sx={{ marginBottom: 1 }}>
-          최고기온: <strong>{minMaxTemp.maxTemp ?? '정보 없음'}°C</strong>
-        </Typography>
-        <Typography variant="body1" sx={{ marginBottom: 1 }}>
-          최저기온: <strong>{minMaxTemp.minTemp ?? '정보 없음'}°C</strong>
-        </Typography>
+        {/* 최고/최저 온도 빨강/파랑 */}
+        <Box display="flex" justifyContent="center" gap={2} mb={2}>
+          <Typography variant="h5" sx={{ color: 'red', fontWeight: 'bold' }}>
+            {minMaxTemp.maxTemp ?? '--'}
+          </Typography>
+          <Typography variant="h5" sx={{ fontWeight: 'bold' }}>/</Typography>
+          <Typography variant="h5" sx={{ color: 'blue', fontWeight: 'bold' }}>
+            {minMaxTemp.minTemp ?? '--'}
+          </Typography>
+        </Box>
+
+        {/* 강수확률 */}
         <Typography variant="body1" sx={{ marginBottom: 1 }}>
           강수확률: <strong>{conditions.pop ?? '정보 없음'}%</strong>
         </Typography>
