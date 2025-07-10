@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import styles from './WeatherPage.module.css';
 import WeatherCard from '../components/WeatherCard';
 import DayWeatherCard from '../components/DayWeatherCard';
+import WeatherMap from '../components/WeatherMap.jsx'; // 지도 컴포넌트 import
 import { fetchDailyWeatherData } from '../services/weatherService';
 import { convertLatLonToGrid } from '../utils/convertGrid';
 import { useLocation } from '../hooks/useLocation';
@@ -18,7 +19,6 @@ const WeatherPage = () => {
       const { nx, ny } = convertLatLonToGrid(location.lat, location.lon);
 
       const today = new Date();
-      // 오늘 포함해서 +1, +2일치 날짜 만들기
       const dailyDates = [1, 2].map((offset) => {
         const d = new Date(today);
         d.setDate(today.getDate() + offset);
@@ -39,13 +39,19 @@ const WeatherPage = () => {
   return (
     <div className={styles.container}>
       <div className={styles.left}>
-        <h3>지도 또는 검색 기능 자리</h3>
+        {/* 지도 or 검색 자리 */}
+        {!locLoading && !locError && location.lat && location.lon && (
+          <WeatherMap lat={location.lat} lon={location.lon} />
+        )}
+        {locLoading && <p>위치 정보를 불러오는 중...</p>}
+        {locError && <p>위치 오류: {locError}</p>}
       </div>
+
       <div className={styles.right}>
-        {/* 오늘 날씨는 WeatherCard에서 useLocation을 내부에서 사용 중 */}
+        {/* 오늘 날씨 */}
         <WeatherCard />
 
-        {/* 내일, 모레 날씨 */}
+        {/* 2일차, 3일차 */}
         {futureWeatherList.map((dayData) => (
           <DayWeatherCard key={dayData.date} {...dayData} />
         ))}
