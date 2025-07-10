@@ -1,3 +1,5 @@
+// my-react-app\src\components\WeatherMap.jsx
+
 import React, { useEffect, useState } from 'react';
 
 const WeatherMap = ({ lat, lon }) => {
