@@ -1,3 +1,5 @@
+// SmallWeatherCard.jsx
+
 import React from 'react';
 import { Card, CardContent, Typography, Box } from '@mui/material';
 import SmallWeatherIcon from './SmallWeatherIcon'; // 새 아이콘 컴포넌트 import

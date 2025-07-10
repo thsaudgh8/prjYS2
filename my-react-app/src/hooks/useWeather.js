@@ -1,3 +1,5 @@
+// useWeather.js
+
 import { useState, useEffect, useRef } from 'react';
 import { fetchTodayMinMaxTemp, fetchCurrentConditions, fetchTodayPop } from '../services/weatherService';
 import { useLocation } from './useLocation';

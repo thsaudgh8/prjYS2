@@ -1,3 +1,5 @@
+// WeatherPage.jsx
+
 import React from 'react';
 import WeatherCard from '../components/WeatherCard';
 import styles from './WeatherPage.module.css'; // ✅ 스타일 모듈 import

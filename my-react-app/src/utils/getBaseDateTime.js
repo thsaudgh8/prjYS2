@@ -1,5 +1,5 @@
-
 // getBaseDateTime.js
+
 export function getBaseDateTime() {
   const now = new Date();
   let baseDate = now.toISOString().slice(0, 10).replace(/-/g, '');

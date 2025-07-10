@@ -1,3 +1,5 @@
+// SmallWeatherIcon.jsx
+
 import React from 'react';
 import WbSunnyIcon from '@mui/icons-material/WbSunny';         // 맑음
 import CloudIcon from '@mui/icons-material/Cloud';             // 흐림
