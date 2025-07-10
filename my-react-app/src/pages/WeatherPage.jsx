@@ -1,3 +1,5 @@
+// WeatherPage.jsx
+
 import React, { useEffect, useState } from 'react';
 import styles from './WeatherPage.module.css';
 import WeatherCard from '../components/WeatherCard';
@@ -39,14 +41,13 @@ const WeatherPage = () => {
   return (
     <div className={styles.container}>
       <div className={styles.left}>
-        {/* 지도 or 검색 자리 */}
-        {!locLoading && !locError && location.lat && location.lon && (
+        {/* location이 준비되었을 때만 지도 표시 */}
+        {location.lat && location.lon ? (
           <WeatherMap lat={location.lat} lon={location.lon} />
+        ) : (
+          <p>현재 위치 정보를 불러오는 중입니다...</p>
         )}
-        {locLoading && <p>위치 정보를 불러오는 중...</p>}
-        {locError && <p>위치 오류: {locError}</p>}
       </div>
-
       <div className={styles.right}>
         {/* 오늘 날씨 */}
         <WeatherCard />
