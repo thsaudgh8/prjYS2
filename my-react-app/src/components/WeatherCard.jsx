@@ -62,7 +62,7 @@ const WeatherCard = ({ weatherData }) => {
       <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
         {/* 아이콘 */}
         <Box>
-          <WeatherIcon skyCode={sky} rain={rain} sx={{ fontSize: 90 }} />
+          <WeatherIcon skyCode={sky} rain={rain} sx={{ fontSize: 100 }} />
         </Box>
 
         {/* 텍스트 */}

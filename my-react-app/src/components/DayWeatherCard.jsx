@@ -17,7 +17,7 @@ const getTodayDateString = (yyyymmdd) => {
   if (!yyyymmdd || yyyymmdd.length !== 8) return '';
   const month = Number(yyyymmdd.slice(4, 6));
   const day = Number(yyyymmdd.slice(6, 8));
-  return `${month} / ${day}`;
+  return `${month}월  ${day}일`;
 };
 
 const getWeatherMessage = (sky, rain) => {
