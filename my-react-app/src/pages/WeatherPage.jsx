@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { TextField, InputAdornment, IconButton } from '@mui/material';
+import { TextField, InputAdornment, IconButton, CircularProgress, Box } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import styles from './WeatherPage.module.css';
 import WeatherCard from '../components/WeatherCard';
@@ -128,12 +128,21 @@ const WeatherPage = () => {
       </div>
 
       <div className={styles.right}>
-        {loading && <p>오늘 날씨 불러오는 중...</p>}
-        {error && <p style={{ color: 'red' }}>에러: {error}</p>}
-        {todayWeather && !loading && !error && <WeatherCard weatherData={todayWeather} />}
-        {futureWeatherList.map(day => (
-          <DayWeatherCard key={day.date} {...day} />
-        ))}
+        {loading ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', height: '400px', justifyContent: 'center' }}>
+            <CircularProgress size={60} thickness={5} />
+            <p style={{ marginTop: '1rem' }}>날씨 데이터를 불러오는 중이에요...</p>
+          </Box>
+        ) : error ? (
+          <p style={{ color: 'red' }}>에러: {error}</p>
+        ) : (
+          <>
+            {todayWeather && <WeatherCard weatherData={todayWeather} />}
+            {futureWeatherList.map(day => (
+              <DayWeatherCard key={day.date} {...day} />
+            ))}
+          </>
+        )}
       </div>
     </div>
   );
