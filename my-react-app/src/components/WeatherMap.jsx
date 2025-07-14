@@ -13,8 +13,7 @@ const WeatherMap = ({ lat, lon }) => {
     }
 
     const script = document.createElement('script');
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_WEATHER_MAP_API_KEY}&libraries=services`;
-    script.async = true;
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_WEATHER_MAP_API_KEY}&libraries=services&autoload=false`;
     script.onload = () => setMapLoaded(true);
     document.head.appendChild(script);
 
@@ -23,9 +22,10 @@ const WeatherMap = ({ lat, lon }) => {
     };
   }, []);
 
-  useEffect(() => {
-    if (!mapLoaded || !lat || !lon) return;
+useEffect(() => {
+  if (!mapLoaded || !lat || !lon) return;
 
+  window.kakao.maps.load(() => {
     const container = document.getElementById('map');
     const options = {
       center: new window.kakao.maps.LatLng(lat, lon),
@@ -33,11 +33,12 @@ const WeatherMap = ({ lat, lon }) => {
     };
 
     const map = new window.kakao.maps.Map(container, options);
-
     const markerPosition = new window.kakao.maps.LatLng(lat, lon);
     const marker = new window.kakao.maps.Marker({ position: markerPosition });
     marker.setMap(map);
-  }, [mapLoaded, lat, lon]);
+  });
+}, [mapLoaded, lat, lon]);
+
 
   return <div id="map" style={{ width: '100%', height: '400px' }}></div>;
 };
