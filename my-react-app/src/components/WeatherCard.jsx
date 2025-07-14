@@ -7,55 +7,32 @@ import {
   Typography,
   CircularProgress,
   Box,
-  Divider,
 } from '@mui/material';
-import { useLocation } from '../hooks/useLocation';
 import { convertLatLonToGrid } from '../utils/convertGrid';
 import { fetchMinMaxTemp, fetchLatestWeatherConditions } from '../services/weatherService';
 import WeatherIcon from './WeatherIcon';
-
-const convertPtyToText = (pty) => {
-  switch (Number(pty)) {
-    case 0:
-      return '없음';
-    case 1:
-      return '비';
-    case 2:
-      return '비/눈';
-    case 3:
-      return '눈';
-    case 4:
-      return '소나기';
-    default:
-      return '알 수 없음';
-  }
-};
 
 const getTodayDateString = () => {
   const today = new Date();
   return `${today.getMonth() + 1} / ${today.getDate()}`;
 };
 
-const WeatherCard = () => {
-  const { location, loading: locLoading, error: locError } = useLocation();
+const WeatherCard = ({ location }) => {
   const [minMaxTemp, setMinMaxTemp] = useState({ minTemp: null, maxTemp: null });
   const [conditions, setConditions] = useState({ pop: null, pty: null, sky: null, rain: null });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (locLoading || locError) return;
-    const { lat, lon } = location;
-    if (!lat || !lon) return;
+    if (!location?.lat || !location?.lon) return;
 
-    const { nx, ny } = convertLatLonToGrid(lat, lon);
+    const { nx, ny } = convertLatLonToGrid(location.lat, location.lon);
 
     const loadData = async () => {
       try {
         setLoading(true);
         const temps = await fetchMinMaxTemp(nx, ny);
         const cond = await fetchLatestWeatherConditions(nx, ny);
-
         setMinMaxTemp(temps);
         setConditions(cond);
         setError(null);
@@ -67,9 +44,13 @@ const WeatherCard = () => {
     };
 
     loadData();
-  }, [locLoading, locError, location]);
+  }, [location]);
 
-  if (locLoading || loading) {
+  if (!location) {
+    return <Typography>위치 정보를 기다리는 중입니다...</Typography>;
+  }
+
+  if (loading) {
     return (
       <Card sx={{ maxWidth: 600, margin: '20px auto', padding: 3 }}>
         <CardContent>
@@ -81,12 +62,12 @@ const WeatherCard = () => {
     );
   }
 
-  if (locError || error) {
+  if (error) {
     return (
       <Card sx={{ maxWidth: 600, margin: '20px auto', padding: 3 }}>
         <CardContent>
           <Typography color="error" align="center">
-            에러: {locError || error}
+            에러: {error}
           </Typography>
         </CardContent>
       </Card>
@@ -126,12 +107,9 @@ const WeatherCard = () => {
   return (
     <Card sx={{ maxWidth: 600, margin: '10px', padding: 3, boxShadow: 3 }}>
       <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-        {/* 아이콘 */}
         <Box>
           <WeatherIcon skyCode={conditions.sky} rain={conditions.rain} sx={{ fontSize: 100 }} />
         </Box>
-
-        {/* 텍스트 정보 */}
         <Box>
           <Typography variant="h5" sx={{ fontWeight: 'bold', marginBottom: 1 }}>
             {getTodayDateString()}
