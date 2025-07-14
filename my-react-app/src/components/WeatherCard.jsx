@@ -59,42 +59,43 @@ const WeatherCard = ({ weatherData }) => {
         },
       }}
     >
-      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-        {/* 아이콘 */}
-        <Box>
-          <WeatherIcon skyCode={sky} rain={rain} sx={{ fontSize: 100 }} />
-        </Box>
+      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          {/* 아이콘 */}
+          <Box>
+            <WeatherIcon skyCode={sky} rain={rain} sx={{ fontSize: 100 }} />
+          </Box>
 
-        {/* 텍스트 */}
-        <Box sx={{ flex: 1 }}>
-          <Typography variant="h5" fontWeight="bold" gutterBottom>
-            {getTodayDateString(date)}
-          </Typography>
+          {/* 텍스트 */}
+          <Box>
+            <Typography variant="h5" fontWeight="bold" gutterBottom>
+              {getTodayDateString(date)}
+            </Typography>
 
-          <Typography variant="body1" gutterBottom>
-            {getWeatherMessage(sky, rain)}
-          </Typography>
+            <Typography variant="body1" gutterBottom>
+              {getWeatherMessage(sky, rain)}
+            </Typography>
 
-          <Typography variant="body2" gutterBottom>
-            🌡 최고 온도: <strong style={{ color: 'red' }}>{maxTemp ?? '--'}°</strong> / 최저 온도: <strong style={{ color: 'blue' }}>{minTemp ?? '--'}°</strong>
-          </Typography>
-
-          {popAm !== null && popAm !== undefined ? (
             <Typography variant="body2" gutterBottom>
-              ☀ 오전 강수 확률: <strong>{popAm}%</strong> / 오후 강수 확률: <strong>{popPm ?? '--'}%</strong>
+              🌡 최고 온도:<strong style={{ color: 'red' }}>{maxTemp ?? '--'}°</strong> / 최저 온도:{' '}
+              <strong style={{ color: 'blue' }}>{minTemp ?? '--'}°</strong>
             </Typography>
-          ) : popPm !== null && popPm !== undefined ? (
-            <Typography variant="body2" gutterBottom>
-              ☀ 오후 강수 확률: <strong>{popPm}%</strong>
-            </Typography>
-          ) : null}
+
+            {popAm !== null && popAm !== undefined ? (
+              <Typography variant="body2" gutterBottom>
+                ☀ 오전 강수 확률: <strong>{popAm}%</strong> / 오후 강수 확률: <strong>{popPm ?? '--'}%</strong>
+              </Typography>
+            ) : popPm !== null && popPm !== undefined ? (
+              <Typography variant="body2" gutterBottom>
+                ☀ 오후 강수 확률: <strong>{popPm}%</strong>
+              </Typography>
+            ) : null}
 
 
-          {Number(pty) > 0 && (
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              🌧 강수형태: <strong>{convertPtyToText(pty)}</strong>
-            </Typography>
-          )}
+            {Number(pty) > 0 && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                🌧 강수형태: <strong>{convertPtyToText(pty)}</strong>
+              </Typography>
+            )}
         </Box>
       </CardContent>
     </Card>
