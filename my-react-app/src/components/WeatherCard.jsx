@@ -92,7 +92,7 @@ const WeatherCard = ({ weatherData }) => {
 
 
             {Number(pty) > 0 && (
-              <Typography variant="body2" sx={{ mt: 1 }}>
+              <Typography variant="body2" gutterBottom>  
                 🌧 강수형태: <strong>{convertPtyToText(pty)}</strong>
               </Typography>
             )}

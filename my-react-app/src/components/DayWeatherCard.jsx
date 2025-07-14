@@ -89,7 +89,7 @@ const DayWeatherCard = ({ date, sky, rain, pty, popAm, popPm, maxTemp, minTemp }
 
 
             {Number(pty) > 0 && (
-              <Typography variant="body2" sx={{ mt: 1 }}>
+              <Typography variant="body2" gutterBottom>
                 🌧 강수형태: <strong>{convertPtyToText(pty)}</strong>
               </Typography>
             )}
