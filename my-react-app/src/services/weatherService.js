@@ -164,25 +164,26 @@ export async function fetchDailyWeatherData(nx, ny) {
     }
   });
 
-  // 후처리
-  dailyDates.forEach((date) => {
-    const d = dailyData[date];
+  // 후처리 마지막에 추가
+dailyDates.forEach((date) => {
+  const d = dailyData[date];
 
-    if (d._popAmList.length > 0) {
-      d.popAm = Math.max(...d._popAmList);
-    }
-    if (d._popPmList.length > 0) {
-      d.popPm = Math.max(...d._popPmList);
-    }
+  if (d._popAmList.length > 0) d.popAm = Math.max(...d._popAmList);
+  if (d._popPmList.length > 0) d.popPm = Math.max(...d._popPmList);
 
-    const hasRain = d._ptyList.some(v => v >= 1);
-    d.rain = hasRain ? 1 : 0;
+  const hasRain = d._ptyList.some(v => v >= 1);
+  d.rain = hasRain ? 1 : 0;
 
-    // 정리
-    delete d._popAmList;
-    delete d._popPmList;
-    delete d._ptyList;
-  });
+  // ✅ 강수형태 대표값 설정 (최댓값으로)
+  if (d._ptyList.length > 0) {
+    d.pty = Math.max(...d._ptyList);
+  }
+
+  // 정리
+  delete d._popAmList;
+  delete d._popPmList;
+  delete d._ptyList;
+});
 
   return Object.values(dailyData);
 }

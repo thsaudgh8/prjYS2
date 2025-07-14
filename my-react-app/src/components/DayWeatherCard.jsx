@@ -69,11 +69,12 @@ const DayWeatherCard = ({ date, sky, rain, pty, popAm, popPm, maxTemp, minTemp }
             오후 강수 확률: <strong>{popPm ?? '정보 없음'}%</strong>
           </Typography>
 
-          {pty !== '0' && (
+          {Number(pty) > 0 && (
             <Typography variant="body1" sx={{ color: '#6ea8ff' }}>
               강수형태: <strong>{convertPtyToText(pty)}</strong>
             </Typography>
           )}
+
         </Box>
       </CardContent>
     </Card>
