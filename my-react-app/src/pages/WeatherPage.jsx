@@ -1,22 +1,22 @@
-// WeatherPage.jsx
-
 import React, { useEffect, useState } from 'react';
+import { TextField, InputAdornment, IconButton } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
 import styles from './WeatherPage.module.css';
 import WeatherCard from '../components/WeatherCard';
 import DayWeatherCard from '../components/DayWeatherCard';
 import WeatherMap from '../components/WeatherMap.jsx';
-import { fetchDailyWeatherData } from '../services/weatherService';
+import { fetchMinMaxTemp, fetchLatestWeatherConditions, fetchDailyWeatherData } from '../services/weatherService';
 import { convertLatLonToGrid } from '../utils/convertGrid';
 import { useLocation } from '../hooks/useLocation';
 
 const WeatherPage = () => {
   const { location: initialLocation, loading: locLoading, error: locError } = useLocation();
 
-  const [location, setLocation] = useState(null); // 현재 또는 검색 위치
-  const [futureWeatherList, setFutureWeatherList] = useState([]);
+  const [location, setLocation] = useState(null);
+  const [todayWeather, setTodayWeather] = useState(null); // 오늘 날씨 데이터 (최고/최저 + 최신상태)
+  const [futureWeatherList, setFutureWeatherList] = useState([]); // 2~3일차 예보
   const [searchText, setSearchText] = useState('');
-
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // 초기 위치 설정
@@ -26,38 +26,53 @@ const WeatherPage = () => {
     }
   }, [locLoading, locError, initialLocation]);
 
-  // 날씨 데이터 불러오기
+  // 날씨 데이터 불러오기 (location 변경 시)
   useEffect(() => {
     if (!location?.lat || !location?.lon) return;
 
-    const loadFutureWeather = async () => {
+    const loadWeatherData = async () => {
       setLoading(true);
       setError(null);
 
       try {
         const { nx, ny } = convertLatLonToGrid(location.lat, location.lon);
 
+        // 오늘 날짜, 내일, 모레 날짜 (yyyymmdd)
         const today = new Date();
-        const dailyDates = [1, 2].map((offset) => {
+        const todayStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+
+        const dailyDates = [1, 2].map(offset => {
           const d = new Date(today);
           d.setDate(today.getDate() + offset);
           return d.toISOString().slice(0, 10).replace(/-/g, '');
         });
 
-        const data = await fetchDailyWeatherData(nx, ny, dailyDates);
-        setFutureWeatherList(data);
+        // 오늘 최고/최저 기온 + 최신 상태 (POP, PTY, SKY)
+        const [minMaxTemp, latestConditions, dailyData] = await Promise.all([
+          fetchMinMaxTemp(nx, ny),
+          fetchLatestWeatherConditions(nx, ny),
+          fetchDailyWeatherData(nx, ny, dailyDates),
+        ]);
+
+        setTodayWeather({
+          date: todayStr,
+          maxTemp: minMaxTemp.maxTemp,
+          minTemp: minMaxTemp.minTemp,
+          ...latestConditions,
+        });
+
+        setFutureWeatherList(dailyData);
       } catch (e) {
-        setError('날씨 정보를 불러오는 중 오류가 발생했습니다.');
-        console.error(e);
+        setError(e.message || '날씨 데이터를 불러오는데 실패했습니다.');
       } finally {
         setLoading(false);
       }
     };
 
-    loadFutureWeather();
+    loadWeatherData();
   }, [location]);
 
-  // 검색 처리
+  // 검색 함수
   const handleSearch = () => {
     if (!searchText.trim()) return;
 
@@ -67,7 +82,6 @@ const WeatherPage = () => {
         const first = result[0];
         const lat = parseFloat(first.y);
         const lon = parseFloat(first.x);
-
         setLocation({ lat, lon });
       } else {
         alert('검색 결과가 없어요!');
@@ -76,57 +90,32 @@ const WeatherPage = () => {
   };
 
   const handleSearchKeyDown = (e) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
+    if (e.key === 'Enter') handleSearch();
   };
-
-  // 로딩 중
-  if (locLoading || loading) {
-    return (
-      <div className={styles.container}>
-        <p style={{ margin: 'auto', fontSize: 18 }}>로딩 중입니다...</p>
-      </div>
-    );
-  }
-
-  // 위치 정보 오류
-  if (locError) {
-    return (
-      <div className={styles.container}>
-        <p style={{ margin: 'auto', color: 'red', fontSize: 18 }}>
-          위치 정보를 불러오는 데 실패했습니다: {locError}
-        </p>
-      </div>
-    );
-  }
-
-  // 날씨 데이터 오류
-  if (error) {
-    return (
-      <div className={styles.container}>
-        <p style={{ margin: 'auto', color: 'red', fontSize: 18 }}>{error}</p>
-      </div>
-    );
-  }
 
   return (
     <div className={styles.container}>
       <div className={styles.left}>
-        {/* 검색창 */}
-        <input
-          type="text"
+        {/* MUI 검색창 */}
+        <TextField
+          fullWidth
+          variant="outlined"
           placeholder="장소 검색"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          onKeyDown={handleSearchKeyDown}
-          style={{
-            width: '100%',
-            padding: '8px',
-            marginBottom: '12px',
-            fontSize: '16px',
-            boxSizing: 'border-box',
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSearch();
           }}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton onClick={handleSearch} edge="end" aria-label="search">
+                  <SearchIcon />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+          sx={{ mb: 2 }}
         />
 
         {/* 지도 */}
@@ -138,12 +127,14 @@ const WeatherPage = () => {
       </div>
 
       <div className={styles.right}>
-        {/* 오늘 날씨 */}
-        {location && <WeatherCard location={location} />}
+        {/* 오늘 날씨 카드 */}
+        {loading && <p>오늘 날씨 불러오는 중...</p>}
+        {error && <p style={{ color: 'red' }}>에러: {error}</p>}
+        {todayWeather && !loading && !error && <WeatherCard weatherData={todayWeather} />}
 
-        {/* 2,3일차 예보 */}
-        {futureWeatherList.map((dayData) => (
-          <DayWeatherCard key={dayData.date} {...dayData} />
+        {/* 미래 예보 카드 */}
+        {futureWeatherList.map(day => (
+          <DayWeatherCard key={day.date} {...day} />
         ))}
       </div>
     </div>
