@@ -1,14 +1,12 @@
-// weatherService.js
-
 const SERVICE_KEY = import.meta.env.VITE_WEATHER_API_KEY;
 const BASE_URL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst';
 
+// 기준 날짜/시간 - 0200 기준 (최고/최저용)
 function getBaseDateTime() {
   const now = new Date();
   let baseDate = now.toISOString().slice(0, 10).replace(/-/g, '');
   let baseTime = '0200';
 
-  // 0200 이전이면 전날 0200로 잡음
   if (now.getHours() < 2) {
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
@@ -18,11 +16,39 @@ function getBaseDateTime() {
   return { baseDate, baseTime };
 }
 
-// 단기예보는 0200 기준으로 받고
+// 최신 기준 날짜/시간 - 단기예보 업데이트 시간 기준 (0200, 0500, 0800, 1100, 1400, 1700, 2000, 2300)
+function getLatestBaseDateTime() {
+  const now = new Date();
+  const baseTimes = ['0200', '0500', '0800', '1100', '1400', '1700', '2000', '2300'];
+  let baseDate = now.toISOString().slice(0, 10).replace(/-/g, '');
+
+  let hour = now.getHours();
+  let minute = now.getMinutes();
+  let baseTime = '0200';
+
+  for (let i = baseTimes.length - 1; i >= 0; i--) {
+    const tHour = parseInt(baseTimes[i].slice(0, 2), 10);
+    if (hour > tHour || (hour === tHour && minute >= 0)) {
+      baseTime = baseTimes[i];
+      break;
+    }
+  }
+
+  if (hour < 2) {
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    baseDate = yesterday.toISOString().slice(0, 10).replace(/-/g, '');
+    baseTime = '2300';
+  }
+
+  return { baseDate, baseTime };
+}
+
+// 최고/최저 기온 조회 (0200 기준)
 export async function fetchMinMaxTemp(nx, ny) {
   const { baseDate, baseTime } = getBaseDateTime();
 
-  const url = `${BASE_URL}?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=400&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
+  const url = `${BASE_URL}?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error('단기예보 최고/최저 기온 API 요청 실패');
   const data = await res.json();
@@ -41,100 +67,53 @@ export async function fetchMinMaxTemp(nx, ny) {
   return { maxTemp, minTemp };
 }
 
-// 강수확률(POP), 강수형태(PTY), 하늘 상태(SKY)는 최신 시간으로 계속 요청해야 하니
-// 호출 시점 기준 가장 가까운 baseDate/baseTime으로 받아옴
-function getLatestBaseDateTime() {
-  // 단기예보 base_time 기준: 0200, 0500, 0800, 1100, 1400, 1700, 2000, 2300 중에서 현재시간 이전 가장 가까운 시간 사용
-  const now = new Date();
-  const baseTimes = ['0200', '0500', '0800', '1100', '1400', '1700', '2000', '2300'];
-  let baseDate = now.toISOString().slice(0, 10).replace(/-/g, '');
-
-  let hour = now.getHours();
-  let minute = now.getMinutes();
-  // 기준 시간 찾기 (현재시간 이전 중 가장 가까운 base_time)
-  let baseTime = '0200';
-  for (let i = baseTimes.length - 1; i >= 0; i--) {
-    const tHour = parseInt(baseTimes[i].slice(0, 2), 10);
-    if (hour > tHour || (hour === tHour && minute >= 0)) {
-      baseTime = baseTimes[i];
-      break;
-    }
-  }
-
-  // 0200 이전 (예: 00시)일 경우 전날 2300 기준으로
-  if (hour < 2) {
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
-    baseDate = yesterday.toISOString().slice(0, 10).replace(/-/g, '');
-    baseTime = '2300';
-  }
-
-  return { baseDate, baseTime };
-}
-
+// 최신 강수확률, 강수형태, 하늘 상태 조회
 export async function fetchLatestWeatherConditions(nx, ny) {
   const { baseDate, baseTime } = getLatestBaseDateTime();
 
-  const url = `${BASE_URL}?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=400&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
+  const url = `${BASE_URL}?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error('단기예보 최신 기상 상태 API 요청 실패');
+  if (!res.ok) throw new Error('최신 기상 상태 API 요청 실패');
   const data = await res.json();
   const items = data.response?.body?.items?.item ?? [];
 
-  // fcstTime이 현재시간보다 같거나 큰 첫 데이터부터 3가지 카테고리 추출
-  const now = new Date();
-  const nowHHmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+  let pop = null; // 강수확률
+  let pty = null; // 강수형태
+  let sky = null; // 하늘상태
 
-  // 현재시간 이후 forecast 중 가장 가까운 시간 선택
-  let targetFcstTime = null;
   for (const item of items) {
-    if (item.fcstTime >= nowHHmm) {
-      targetFcstTime = item.fcstTime;
-      break;
-    }
-  }
-  // 만약 현재시간 이후 forecast가 없으면 가장 가까운 fcstTime으로 fallback
-  if (!targetFcstTime && items.length > 0) {
-    targetFcstTime = items[0].fcstTime;
+    if (item.category === 'POP') pop = item.fcstValue;
+    else if (item.category === 'PTY') pty = item.fcstValue;
+    else if (item.category === 'SKY') sky = item.fcstValue;
   }
 
-  const conditions = {};
-
-  ['POP', 'PTY', 'SKY'].forEach((category) => {
-    const found = items.find(
-      (item) => item.category === category && item.fcstTime === targetFcstTime
-    );
-    conditions[category.toLowerCase()] = found ? found.fcstValue : null;
-  });
-
-  // 여기서 pty 값을 rain으로 복사
-  conditions.rain = conditions.pty;
-
-  return conditions; // { pop, pty, sky, rain }
+  return { pop, pty, sky };
 }
 
-
-export async function fetchDailyWeatherData(nx, ny, dailyDates) {
-  const BASE_URL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst';
-
-  // 7/11, 7/12는 baseDate, baseTime 기준으로 데이터 여러개가 있으니
-  // 최근 baseDate/baseTime을 구해서 API 호출 (ex. getLatestBaseDateTime 함수 참고)
-  const { baseDate, baseTime } = getLatestBaseDateTime();
+// 일별 단기예보 (평균 강수확률 포함, 오전/오후 구분)
+// 초기값 세팅
+export async function fetchDailyWeatherData(nx, ny) {
+  const { baseDate, baseTime } = getLatestBaseDateTime(); // 최신 예보 기준 사용
 
   const url = `${BASE_URL}?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
-
   const res = await fetch(url);
-  if (!res.ok) throw new Error('일별 단기예보 API 요청 실패');
+  if (!res.ok) throw new Error('일일 예보 데이터 요청 실패');
+
   const data = await res.json();
   const items = data.response?.body?.items?.item ?? [];
 
-  // dailyDates 배열을 Set으로 만들기 (빠른 검색용)
-  const dateSet = new Set(dailyDates);
+  // 오늘 기준 6일치 날짜 추출
+  const today = new Date();
+  const dailyDates = Array.from({ length: 3 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(d.getDate() + i);
+    return d.toISOString().slice(0, 10).replace(/-/g, '');
+  });
 
-  // 각 날짜별 데이터 객체 생성
+  const dateSet = new Set(dailyDates);
   const dailyData = {};
 
-  // 최대/최저기온 저장용
+  // 초기 세팅
   dailyDates.forEach((date) => {
     dailyData[date] = {
       date,
@@ -143,37 +122,67 @@ export async function fetchDailyWeatherData(nx, ny, dailyDates) {
       sky: null,
       rain: null,
       pty: null,
-      pop: null,
+      popAm: null,
+      popPm: null,
+      _popAmList: [],
+      _popPmList: [],
+      _ptyList: [],
     };
   });
 
-  // API에서 받은 items 중 날짜가 dailyDates에 포함된 데이터만 필터 및 가공
+  // 데이터 분류
   items.forEach((item) => {
-    if (!dateSet.has(item.fcstDate)) return;
+    const { fcstDate, fcstTime, category, fcstValue } = item;
+    if (!dateSet.has(fcstDate)) return;
 
-    const dayData = dailyData[item.fcstDate];
-    switch (item.category) {
+    const data = dailyData[fcstDate];
+
+    switch (category) {
       case 'TMX':
-        dayData.maxTemp = item.fcstValue;
+        data.maxTemp = fcstValue;
         break;
       case 'TMN':
-        dayData.minTemp = item.fcstValue;
+        data.minTemp = fcstValue;
         break;
       case 'SKY':
-        dayData.sky = item.fcstValue;
+        data.sky = fcstValue;
         break;
       case 'PTY':
-        dayData.pty = item.fcstValue;
-        dayData.rain = item.fcstValue; // rain 복사
+        data.pty = fcstValue;
+        data._ptyList.push(Number(fcstValue));
         break;
       case 'POP':
-        dayData.pop = item.fcstValue;
+        const hour = parseInt(fcstTime.slice(0, 2), 10);
+        if (hour < 12) {
+          data._popAmList.push(Number(fcstValue));
+        } else {
+          data._popPmList.push(Number(fcstValue));
+        }
         break;
       default:
         break;
     }
   });
 
-  // 배열로 반환
-  return dailyDates.map((date) => dailyData[date]);
+  // 후처리
+  dailyDates.forEach((date) => {
+    const d = dailyData[date];
+
+    if (d._popAmList.length > 0) {
+      d.popAm = Math.max(...d._popAmList);
+    }
+    if (d._popPmList.length > 0) {
+      d.popPm = Math.max(...d._popPmList);
+    }
+
+    const hasRain = d._ptyList.some(v => v >= 1);
+    d.rain = hasRain ? 1 : 0;
+
+    // 정리
+    delete d._popAmList;
+    delete d._popPmList;
+    delete d._ptyList;
+  });
+
+  return Object.values(dailyData);
 }

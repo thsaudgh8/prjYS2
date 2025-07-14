@@ -13,20 +13,18 @@ const WeatherPage = () => {
   const { location: initialLocation, loading: locLoading, error: locError } = useLocation();
 
   const [location, setLocation] = useState(null);
-  const [todayWeather, setTodayWeather] = useState(null); // 오늘 날씨 데이터 (최고/최저 + 최신상태)
-  const [futureWeatherList, setFutureWeatherList] = useState([]); // 2~3일차 예보
+  const [todayWeather, setTodayWeather] = useState(null);
+  const [futureWeatherList, setFutureWeatherList] = useState([]);
   const [searchText, setSearchText] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // 초기 위치 설정
   useEffect(() => {
     if (!locLoading && !locError && initialLocation?.lat && initialLocation?.lon) {
       setLocation(initialLocation);
     }
   }, [locLoading, locError, initialLocation]);
 
-  // 날씨 데이터 불러오기 (location 변경 시)
   useEffect(() => {
     if (!location?.lat || !location?.lon) return;
 
@@ -37,31 +35,40 @@ const WeatherPage = () => {
       try {
         const { nx, ny } = convertLatLonToGrid(location.lat, location.lon);
 
-        // 오늘 날짜, 내일, 모레 날짜 (yyyymmdd)
         const today = new Date();
         const todayStr = today.toISOString().slice(0, 10).replace(/-/g, '');
 
-        const dailyDates = [1, 2].map(offset => {
+        // ✅ 오늘 + 내일 + 모레 날짜 포함
+        const dailyDates = [0, 1, 2].map(offset => {
           const d = new Date(today);
           d.setDate(today.getDate() + offset);
           return d.toISOString().slice(0, 10).replace(/-/g, '');
         });
 
-        // 오늘 최고/최저 기온 + 최신 상태 (POP, PTY, SKY)
         const [minMaxTemp, latestConditions, dailyData] = await Promise.all([
           fetchMinMaxTemp(nx, ny),
           fetchLatestWeatherConditions(nx, ny),
           fetchDailyWeatherData(nx, ny, dailyDates),
         ]);
 
+        // ✅ 오늘 데이터 추출
+        const todayDaily = dailyData.find(d => d.date === todayStr);
+
         setTodayWeather({
           date: todayStr,
           maxTemp: minMaxTemp.maxTemp,
           minTemp: minMaxTemp.minTemp,
-          ...latestConditions,
+          pop: latestConditions.pop,
+          pty: latestConditions.pty,
+          sky: latestConditions.sky,
+          rain: latestConditions.pty,
+          popAm: todayDaily?.popAm,
+          popPm: todayDaily?.popPm,
         });
 
-        setFutureWeatherList(dailyData);
+        // ✅ 오늘 제외한 미래 날씨만 따로 뽑기
+        const future = dailyData.filter(d => d.date !== todayStr);
+        setFutureWeatherList(future);
       } catch (e) {
         setError(e.message || '날씨 데이터를 불러오는데 실패했습니다.');
       } finally {
@@ -72,7 +79,8 @@ const WeatherPage = () => {
     loadWeatherData();
   }, [location]);
 
-  // 검색 함수
+
+
   const handleSearch = () => {
     if (!searchText.trim()) return;
 
@@ -89,23 +97,16 @@ const WeatherPage = () => {
     });
   };
 
-  const handleSearchKeyDown = (e) => {
-    if (e.key === 'Enter') handleSearch();
-  };
-
   return (
     <div className={styles.container}>
       <div className={styles.left}>
-        {/* MUI 검색창 */}
         <TextField
           fullWidth
           variant="outlined"
           placeholder="장소 검색"
           value={searchText}
           onChange={(e) => setSearchText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSearch();
-          }}
+          onKeyDown={(e) => { if (e.key === 'Enter') handleSearch(); }}
           InputProps={{
             endAdornment: (
               <InputAdornment position="end">
@@ -118,7 +119,6 @@ const WeatherPage = () => {
           sx={{ mb: 2 }}
         />
 
-        {/* 지도 */}
         {location?.lat && location?.lon ? (
           <WeatherMap lat={location.lat} lon={location.lon} />
         ) : (
@@ -127,12 +127,9 @@ const WeatherPage = () => {
       </div>
 
       <div className={styles.right}>
-        {/* 오늘 날씨 카드 */}
         {loading && <p>오늘 날씨 불러오는 중...</p>}
         {error && <p style={{ color: 'red' }}>에러: {error}</p>}
         {todayWeather && !loading && !error && <WeatherCard weatherData={todayWeather} />}
-
-        {/* 미래 예보 카드 */}
         {futureWeatherList.map(day => (
           <DayWeatherCard key={day.date} {...day} />
         ))}
@@ -141,4 +138,4 @@ const WeatherPage = () => {
   );
 };
 
-export default WeatherPage;
+export default WeatherPage
