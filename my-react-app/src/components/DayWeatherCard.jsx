@@ -24,18 +24,18 @@ const getWeatherMessage = (sky, rain) => {
   const rainCode = Number(rain);
   if (rainCode > 0) {
     switch (rainCode) {
-      case 1: return '우산 챙기세요, 비가 와요!';
-      case 2: return '비와 눈이 함께 와요!';
-      case 3: return '눈이 내려요!';
+      case 1: return '우산 꼭 챙기세요! 비가 와요.';
+      case 2: return '비와 눈이 함께 와요.';
+      case 3: return '눈이 내려요! 따뜻하게 입으세요.';
       case 4: return '소나기 조심하세요!';
       default: return '비 오는 날이에요!';
     }
   }
   switch (String(sky)) {
     case '1': return '맑은 날이에요!';
-    case '3': return '조금 흐린 날이에요';
-    case '4': return '흐린 하루가 예상돼요';
-    default: return '날씨 정보를 불러오고 있어요';
+    case '3': return '구름이 조금 있어요.';
+    case '4': return '흐린 하루가 될 거예요.';
+    default: return '날씨 정보를 불러오는 중이에요.';
   }
 };
 
@@ -64,16 +64,16 @@ const DayWeatherCard = ({ date, sky, rain, pty, popAm, popPm, maxTemp, minTemp }
 
           {/* 텍스트 */}
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 'bold', marginBottom: 1 }}>
+            <Typography variant="h5" fontWeight="bold" gutterBottom>
               {getTodayDateString(date)}
             </Typography>
 
-            <Typography variant="body1" sx={{ marginBottom: 1 }}>
+            <Typography variant="body1" gutterBottom>
               {getWeatherMessage(sky, rain)}
             </Typography>
 
-            <Typography variant="body1" sx={{ marginBottom: 1 }}>
-              최고 온도: <strong style={{ color: 'red' }}>{maxTemp ?? '--'}°</strong> / 최저 온도:{' '}
+            <Typography variant="body2" gutterBottom>
+              🌡 최고 온도:<strong style={{ color: 'red' }}>{maxTemp ?? '--'}°</strong> / 최저 온도:{' '}
               <strong style={{ color: 'blue' }}>{minTemp ?? '--'}°</strong>
             </Typography>
 
