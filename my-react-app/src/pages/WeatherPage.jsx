@@ -58,13 +58,14 @@ const WeatherPage = () => {
           date: todayStr,
           maxTemp: minMaxTemp.maxTemp,
           minTemp: minMaxTemp.minTemp,
-          pop: latestConditions.pop,
-          pty: latestConditions.pty,
-          sky: latestConditions.sky,
-          rain: latestConditions.pty,
+          pop: todayDaily?.popAm ?? latestConditions.pop, // 오전 강수확률 우선
+          pty: todayDaily?.pty ?? latestConditions.pty,   // 하루 대표 pty 우선
+          sky: todayDaily?.sky ?? latestConditions.sky,
+          rain: todayDaily?.pty ?? latestConditions.pty,  // rain도 pty 기준으로
           popAm: todayDaily?.popAm,
           popPm: todayDaily?.popPm,
         });
+
 
         // ✅ 오늘 제외한 미래 날씨만 따로 뽑기
         const future = dailyData.filter(d => d.date !== todayStr);

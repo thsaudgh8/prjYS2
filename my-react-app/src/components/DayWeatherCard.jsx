@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-} from '@mui/material';
+import { Card, CardContent, Typography, Box } from '@mui/material';
 import WeatherIcon from './WeatherIcon';
 
 const convertPtyToText = (pty) => {
@@ -16,6 +11,13 @@ const convertPtyToText = (pty) => {
     case 4: return '소나기';
     default: return '알 수 없음';
   }
+};
+
+const getTodayDateString = (yyyymmdd) => {
+  if (!yyyymmdd || yyyymmdd.length !== 8) return '';
+  const month = Number(yyyymmdd.slice(4, 6));
+  const day = Number(yyyymmdd.slice(6, 8));
+  return `${month} / ${day}`;
 };
 
 const getWeatherMessage = (sky, rain) => {
@@ -39,45 +41,61 @@ const getWeatherMessage = (sky, rain) => {
 
 const DayWeatherCard = ({ date, sky, rain, pty, popAm, popPm, maxTemp, minTemp }) => {
   return (
-    <Card sx={{ maxWidth: 600, margin: '10px', padding: 3, boxShadow: 3, borderRadius: '16px' }}>
-      <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-        {/* 날씨 아이콘 */}
-        <Box>
-          <WeatherIcon skyCode={sky} rain={rain} sx={{ fontSize: 100 }} />
-        </Box>
+    <Card
+      sx={{
+        maxWidth: 600,
+        margin: '10px',
+        padding: 3,
+        boxShadow: 3,
+        borderRadius: '16px',
+        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+        '&:hover': {
+          transform: 'translateY(-6px)',
+          boxShadow: 8,
+          cursor: 'pointer',
+        }}
+      }
+        >
+        <CardContent sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+          {/* 아이콘 */}
+          <Box>
+            <WeatherIcon skyCode={sky} rain={rain} sx={{ fontSize: 100 }} />
+          </Box>
 
-        {/* 텍스트 정보 */}
-        <Box>
-          <Typography variant="h5" sx={{ fontWeight: 'bold', marginBottom: 1 }}>
-            {date}
-          </Typography>
-
-          <Typography variant="body1" sx={{ marginBottom: 1 }}>
-            {getWeatherMessage(sky, rain)}
-          </Typography>
-
-          <Typography variant="body1" sx={{ marginBottom: 1 }}>
-            최고 온도: <strong style={{ color: 'red' }}>{maxTemp ?? '--'}°</strong> / 최저 온도:{' '}
-            <strong style={{ color: 'blue' }}>{minTemp ?? '--'}°</strong>
-          </Typography>
-
-          <Typography variant="body1" sx={{ color: '#6ea8ff', marginBottom: 1 }}>
-            오전 강수 확률: <strong>{popAm ?? '정보 없음'}%</strong>
-          </Typography>
-
-          <Typography variant="body1" sx={{ color: '#6ea8ff', marginBottom: 1 }}>
-            오후 강수 확률: <strong>{popPm ?? '정보 없음'}%</strong>
-          </Typography>
-
-          {Number(pty) > 0 && (
-            <Typography variant="body1" sx={{ color: '#6ea8ff' }}>
-              강수형태: <strong>{convertPtyToText(pty)}</strong>
+          {/* 텍스트 */}
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: 'bold', marginBottom: 1 }}>
+              {getTodayDateString(date)}
             </Typography>
-          )}
 
-        </Box>
-      </CardContent>
-    </Card>
+            <Typography variant="body1" sx={{ marginBottom: 1 }}>
+              {getWeatherMessage(sky, rain)}
+            </Typography>
+
+            <Typography variant="body1" sx={{ marginBottom: 1 }}>
+              최고 온도: <strong style={{ color: 'red' }}>{maxTemp ?? '--'}°</strong> / 최저 온도:{' '}
+              <strong style={{ color: 'blue' }}>{minTemp ?? '--'}°</strong>
+            </Typography>
+
+            {popAm !== null && popAm !== undefined ? (
+              <Typography variant="body2" gutterBottom>
+                ☀ 오전 강수 확률: <strong>{popAm}%</strong> / 오후 강수 확률: <strong>{popPm ?? '--'}%</strong>
+              </Typography>
+            ) : popPm !== null && popPm !== undefined ? (
+              <Typography variant="body2" gutterBottom>
+                ☀ 오후 강수 확률: <strong>{popPm}%</strong>
+              </Typography>
+            ) : null}
+
+
+            {Number(pty) > 0 && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                🌧 강수형태: <strong>{convertPtyToText(pty)}</strong>
+              </Typography>
+            )}
+          </Box>
+        </CardContent>
+    </Card >
   );
 };
 
