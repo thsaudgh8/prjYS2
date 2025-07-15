@@ -84,6 +84,7 @@ const WeatherPage = () => {
 
   const handleSearch = () => {
     if (!searchText.trim()) return;
+    console.log("🔍 검색어:", searchText);
 
     const ps = new window.kakao.maps.services.Places();
     ps.keywordSearch(searchText, (result, status) => {

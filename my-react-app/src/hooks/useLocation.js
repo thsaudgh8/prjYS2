@@ -1,5 +1,4 @@
-// 위도 경도 나타내는 훅
-
+// useLocation.js
 
 import { useState, useEffect } from "react";
 
@@ -10,19 +9,23 @@ export function useLocation() {
 
   useEffect(() => {
     if (!navigator.geolocation) {
+      console.log("🚫 이 브라우저는 위치 정보를 지원하지 않습니다.");
       setError("Geolocation is not supported by your browser");
       setLoading(false);
       return;
     }
+
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setLocation({
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
-        });
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        console.log("📍 현재 위치 좌표:", lat, lon);
+
+        setLocation({ lat, lon });
         setLoading(false);
       },
       (err) => {
+        console.log("❌ 위치 정보 가져오기 실패:", err.message);
         setError(err.message);
         setLoading(false);
       }
@@ -31,3 +34,4 @@ export function useLocation() {
 
   return { location, loading, error };
 }
+  
