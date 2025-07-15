@@ -1,4 +1,5 @@
 // 지도 기반 버스 정보 페이지
+// 위 코드의 Home은 카카오 맵에서 지도를 가져오는 코드이고, BusInfo은 좌표를 입력하면 그 좌표의 도시코드와 정류장 ID를 구하고, 구한 도시 코드와 정류장 ID로 그 정류장에 도착할 버스들의 정보를 구하는 코드야.그럴때, Home에서 가져온 지도의 버스정류장을 클릭해서, 클릭한 정류장의 좌료를 구하는 방법이 있니 ?
 
 import { Container, Typography } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
@@ -6,6 +7,8 @@ import React, { useEffect, useRef, useState } from 'react';
 
 const SERVICE_KEY = import.meta.env.VITE_BUS_KEY; // 실제 서비스키로 교체
 const map_key = import.meta.env.VITE_MAP_KEY; // 실제 지도 API 키로 교체
+var rat = null;
+var rng = null;
 
 function Home() {
   const mapContainer = useRef(null);
@@ -24,13 +27,27 @@ function Home() {
           level: 3
         };
         mapRef.current = new window.kakao.maps.Map(mapContainer.current, options);
+        window.kakao.maps.event.addListener(mapRef.current, 'click', (mouseEvent) => {
+          rat = mouseEvent.latLng.getLat();
+          rng = mouseEvent.latLng.getLng();
+          // 클릭한 좌표를 이용해 BusInfo 컴포넌트의 상태를 업데이트
+          setCoords({ lat: rat, lng: rng });
+          const marker = new window.kakao.maps.Marker({
+            position: mouseEvent.latLng,
+            map: mapRef.current
+          });
+          marker.setMap(mapRef.current);
+        });
       });
     };
     document.head.appendChild(script);
 
+
     // 위치 추적 시작
     const watchID = navigator.geolocation.watchPosition((position) => {
       setCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+      rat = position.coords.latitude;
+      rng = position.coords.longitude;
     });
 
     // cleanup: 지도 스크립트 및 위치 추적 중지
@@ -62,13 +79,13 @@ function Home() {
       <Typography variant="h5" gutterBottom>
         버스 위치 지도
       </Typography>
-      <div>
+      <div style={{ display: 'flex', flexDirection: 'row' }}>
         <div
           id="map"
           ref={mapContainer}
-          style={{ width: '700px', height: '700px', marginRight: '800px' }}
+          style={{ width: '700px', height: '700px', marginRight: '700px' }}
         />
-        <div style={{ minWidth: '700px', maxWidth: '700px', marginLeft: '800px', textAlign: 'center' }}>
+        <div style={{ minWidth: 'auto', maxWidth: 'auto', textAlign: 'center' }}>
           <BusInfo lat={coords.lat} lng={coords.lng} />
         </div>
       </div>
@@ -93,9 +110,9 @@ function BusInfo({ lat, lng }) {
       queryParams +=
         "&" + encodeURIComponent("_type") + "=" + encodeURIComponent("json");
       queryParams +=
-        "&" + encodeURIComponent("gpsLati") + "=" + encodeURIComponent(lat);
+        "&" + encodeURIComponent("gpsLati") + "=" + encodeURIComponent(rat);
       queryParams +=
-        "&" + encodeURIComponent("gpsLong") + "=" + encodeURIComponent(lng);
+        "&" + encodeURIComponent("gpsLong") + "=" + encodeURIComponent(rng);
 
       fetch(url + queryParams)
         .then((res) => res.json())
