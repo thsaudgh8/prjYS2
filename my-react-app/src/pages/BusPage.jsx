@@ -1,149 +1,102 @@
-import React, { useState } from 'react';
-import { fetchBusStops, fetchRoutesByStop } from '../services/busService';
+import React, { useEffect, useRef, useState } from 'react';
+import { fetchBusStationAndArrival } from '../services/busService';
 
-const BusPage = () => {
-  const [stopName, setStopName] = useState('장안문');
-  const [cityCode, setCityCode] = useState('31010');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [result, setResult] = useState(null);
-  const [routes, setRoutes] = useState({});
+const map_key = import.meta.env.VITE_WEATHER_MAP_API_KEY;
 
-  const handleFetch = async () => {
-    if (!stopName.trim() || !cityCode.trim()) {
-      setError('정류장 이름과 cityCode 모두 입력하세요');
-      setResult(null);
-      return;
-    }
-    setError('');
-    setLoading(true);
-    setResult(null);
-    setRoutes({});
+function BusPage() {
+  const mapContainer = useRef(null);
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);
+  const [coords, setCoords] = useState({ lat: null, lng: null });
+  const [busData, setBusData] = useState(null);
+  const [error, setError] = useState(null);
 
-    try {
-      const data = await fetchBusStops(stopName, cityCode);
-      setResult(data);
-    } catch (e) {
-      setError(e.message);
-      setResult(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${map_key}&autoload=false`;
+    script.async = true;
+    script.onload = () => {
+      window.kakao.maps.load(() => {
+        const mapOptions = {
+          center: new window.kakao.maps.LatLng(37.5665, 126.9780),
+          level: 3,
+        };
+        mapRef.current = new window.kakao.maps.Map(mapContainer.current, mapOptions);
 
-  const getItemsArray = () => {
-    if (!result) return [];
-    const items = result.response?.body?.items?.item;
-    if (!items) return [];
-    return Array.isArray(items) ? items : [items];
-  };
+        window.kakao.maps.event.addListener(mapRef.current, 'click', async (mouseEvent) => {
+          const lat = mouseEvent.latLng.getLat();
+          const lng = mouseEvent.latLng.getLng();
+          setCoords({ lat, lng });
 
-  const handleStopClick = async (nodeid) => {
-    if (routes[nodeid]) return; // 이미 불러온 정류장은 다시 요청 안 함
-    try {
-      const data = await fetchRoutesByStop(cityCode, nodeid);
-      const items = data?.response?.body?.items?.item;
-      const routeList = Array.isArray(items) ? items : items ? [items] : [];
-      setRoutes((prev) => ({ ...prev, [nodeid]: routeList }));
-    } catch (e) {
-      setRoutes((prev) => ({ ...prev, [nodeid]: [{ routeno: '정보 없음' }] }));
-    }
-  };
+          if (markerRef.current) markerRef.current.setMap(null);
+          markerRef.current = new window.kakao.maps.Marker({
+            position: mouseEvent.latLng,
+            map: mapRef.current,
+          });
+
+          try {
+            const data = await fetchBusStationAndArrival(lat, lng);
+            setBusData(data);
+            setError(null);
+          } catch (e) {
+            setBusData(null);
+            setError('버스 정보를 불러오는 데 실패했습니다.');
+            console.error(e);
+          }
+        });
+      });
+    };
+    document.head.appendChild(script);
+
+    const watchID = navigator.geolocation.watchPosition((pos) => {
+      const { latitude, longitude } = pos.coords;
+      setCoords({ lat: latitude, lng: longitude });
+
+      if (mapRef.current) {
+        mapRef.current.setCenter(new window.kakao.maps.LatLng(latitude, longitude));
+      }
+    });
+
+    return () => {
+      document.head.removeChild(script);
+      navigator.geolocation.clearWatch(watchID);
+    };
+  }, []);
 
   return (
-    <div
-      style={{
-        height: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-        boxSizing: 'border-box',
-        background: '#fafafa',
-      }}
-    >
-      <div style={{ marginBottom: 20, display: 'flex', gap: 10, alignItems: 'center' }}>
-        <input
-          placeholder="정류장 이름"
-          value={stopName}
-          onChange={(e) => setStopName(e.target.value)}
-          style={{ padding: 10, fontSize: 16, borderRadius: 4, border: '1px solid #ccc', minWidth: 200 }}
-        />
-        <input
-          placeholder="cityCode"
-          value={cityCode}
-          onChange={(e) => setCityCode(e.target.value)}
-          style={{ padding: 10, fontSize: 16, borderRadius: 4, border: '1px solid #ccc', width: 100 }}
-        />
-        <button
-          onClick={handleFetch}
-          disabled={loading}
-          style={{
-            padding: '10px 20px',
-            fontSize: 16,
-            borderRadius: 4,
-            border: 'none',
-            backgroundColor: '#1976d2',
-            color: 'white',
-            cursor: loading ? 'not-allowed' : 'pointer',
-          }}
-        >
-          {loading ? '로딩중...' : '조회'}
-        </button>
+    <div style={{ display: 'flex', flexDirection: 'row', minHeight: '100vh' }}>
+      <div id="map" ref={mapContainer} style={{ width: '50%' }} />
+      <div style={{ width: '50%', padding: '20px' }}>
+        {error && <div>{error}</div>}
+        {!busData && !error && <div>지도를 클릭해 정류장을 선택하세요</div>}
+        {busData && (
+          <div>
+            <h3>{busData.stationName}</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>버스 번호</th>
+                  <th>도착 예정</th>
+                </tr>
+              </thead>
+              <tbody>
+                {busData.buses.map((bus, idx) => {
+                  const arrival = Math.floor(bus.arrtime / 60);
+                  const timeStr = arrival < 1 ? '곧 도착' : `${arrival}분`;
+                  return (
+                    <tr key={idx}>
+                      <td>{bus.routeno}</td>
+                      <td>{timeStr}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
-
-      {error && <div style={{ color: 'red', marginBottom: 20 }}>{error}</div>}
-
-      {result && (
-        <div
-          style={{
-            maxHeight: 500,
-            overflowY: 'auto',
-            background: '#fff',
-            padding: 15,
-            borderRadius: 6,
-            boxShadow: '0 0 10px rgba(0,0,0,0.1)',
-            width: '90%',
-            maxWidth: 600,
-            textAlign: 'left',
-          }}
-        >
-          {getItemsArray().length === 0 && <div>검색 결과가 없습니다.</div>}
-          {getItemsArray().map((item, idx) => (
-            <div
-              key={idx}
-              style={{ marginBottom: 16, borderBottom: '1px solid #eee', paddingBottom: 10, cursor: 'pointer' }}
-              onClick={() => handleStopClick(item.nodeid)}
-            >
-              <div>
-                <strong>정거장ID:</strong> {item.nodeid}
-              </div>
-              <div>
-                <strong>정거장이름:</strong> {item.nodenm}
-              </div>
-              <div>
-                <strong>정거장번호:</strong> {item.nodeno}
-              </div>
-
-              {routes[item.nodeid] && (
-                <div style={{ marginTop: 8, fontSize: 14 }}>
-                  <strong>경유 노선:</strong>{' '}
-                  {routes[item.nodeid].length === 0
-                    ? '없음'
-                    : routes[item.nodeid].map((route, i) => (
-                        <span key={i} style={{ marginRight: 6 }}>
-                          🚌 {route.routeno}
-                        </span>
-                      ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
-};
+}
 
 export default BusPage;

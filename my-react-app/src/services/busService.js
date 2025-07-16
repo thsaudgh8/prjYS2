@@ -1,19 +1,23 @@
-const API_KEY = import.meta.env.VITE_BUS_API_KEY;
+const SERVICE_KEY = import.meta.env.VITE_BUS_API_KEY;
 
-// 정류장 목록 조회
-export async function fetchBusStops(stopName, cityCode) {
-  const url = `https://apis.data.go.kr/1613000/BusSttnInfoInqireService/getSttnNoList?serviceKey=${API_KEY}&sttnNm=${encodeURIComponent(stopName)}&cityCode=${cityCode}&_type=json`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('네트워크 응답 문제');
-  const data = await res.json();
-  return data;
-}
+export async function fetchBusStationAndArrival(lat, lng) {
+  const stationUrl = `https://apis.data.go.kr/1613000/BusSttnInfoInqireService/getCrdntPrxmtSttnList?serviceKey=${SERVICE_KEY}&gpsLati=${lat}&gpsLong=${lng}&_type=json&pageNo=1&numOfRows=1`;
+  const stationRes = await fetch(stationUrl);
+  const stationData = await stationRes.json();
 
-// 정류장별 경유 노선 조회
-export async function fetchRoutesByStop(cityCode, nodeid) {
-  const url = `https://apis.data.go.kr/1613000/BusSttnInfoInqireService/getSttnThrghRouteList?serviceKey=${API_KEY}&cityCode=${cityCode}&nodeid=${nodeid}&_type=json`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error('네트워크 응답 문제');
-  const data = await res.json();
-  return data;
+  const station = stationData.response?.body?.items?.item;
+  if (!station) throw new Error('정류장 정보를 찾을 수 없습니다.');
+  const { nodeid, citycode, nodenm } = station;
+
+  const arrivalUrl = `https://apis.data.go.kr/1613000/ArvlInfoInqireService/getSttnAcctoArvlPrearngeInfoList?serviceKey=${SERVICE_KEY}&cityCode=${citycode}&nodeId=${nodeid}&_type=json&pageNo=1&numOfRows=50`;
+  const arrivalRes = await fetch(arrivalUrl);
+  const arrivalData = await arrivalRes.json();
+
+  const items = arrivalData.response?.body?.items?.item;
+  if (!items) throw new Error('도착 정보를 찾을 수 없습니다.');
+
+  return {
+    stationName: nodenm,
+    buses: Array.isArray(items) ? items : [items],
+  };
 }
