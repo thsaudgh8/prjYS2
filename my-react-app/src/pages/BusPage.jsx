@@ -162,10 +162,10 @@ function BusPage() {
 
   return (
     <Container
-      maxWidth="md"
+      maxWidth="lg"
       sx={{
-        justifyContent: 'center',
-        minHeight: '80vh',
+        minHeight: '100vh',
+        paddingTop: '2rem',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -174,42 +174,73 @@ function BusPage() {
       <Typography variant="h5" gutterBottom>
         버스 위치 지도
       </Typography>
-      <Button
-        variant="contained"
-        sx={{ mb: 2 }}
-        onClick={handleGoCurrentLocation}
-        disabled={!currentPosition.lat}
-      >
-        현위치로 돌아가기
-      </Button>
 
-      <div style={{ marginBottom: 16, display: 'flex', gap: 8, width: '700px' }}>
-        <TextField
-          label="장소 검색"
-          variant="outlined"
-          fullWidth
-          value={searchText}
-          onChange={(e) => setSearchText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              handleSearch();
-            }
-          }}
-        />
-        <Button variant="contained" onClick={handleSearch}>
-          검색
-        </Button>
-      </div>
+      <div style={{ display: 'flex', width: '100%', gap: '2rem' }}>
+        {/* 왼쪽 지도 */}
+        <div style={{ flex: 1 }}>
+          <div
+            id="map"
+            ref={mapContainer}
+            style={{
+              width: '100%',
+              height: '700px',
+              borderRadius: '12px',
+              border: '1px solid #ccc',
+            }}
+          />
+        </div>
 
-      <div style={{ display: 'flex', flexDirection: 'row' }}>
-        <div
-          id="map"
-          ref={mapContainer}
-          style={{ width: '700px', height: '700px', marginRight: '700px' }}
-        />
-        <div style={{ minWidth: 'auto', maxWidth: 'auto', textAlign: 'center' }}>
-          <BusInfo lat={coords.lat} lng={coords.lng} />
+        {/* 오른쪽 정보 카드 */}
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+        }}>
+          {/* 상단 검색 폼 */}
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <TextField
+              label="장소 검색"
+              variant="outlined"
+              fullWidth
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSearch();
+                }
+              }}
+            />
+            <Button variant="contained" onClick={handleSearch}>
+              검색
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={handleGoCurrentLocation}
+              disabled={!currentPosition.lat}
+              sx={{
+                whiteSpace: 'nowrap',
+                minWidth: 'fit-content',
+              }}
+            >
+              현위치
+            </Button>
+          </div>
+          {/* 버스 정보 카드 */}
+          <div
+            style={{
+              flex: 1,
+              padding: '1rem',
+              border: '1px solid #ccc',
+              borderRadius: '12px',
+              overflowY: 'auto',
+              minHeight: '300px',     // 높이 최소만 정함
+              // maxHeight: '700px',  ❌ 제거
+            }}
+          >
+            <BusInfo lat={coords.lat} lng={coords.lng} />
+          </div>
         </div>
       </div>
     </Container>
@@ -250,8 +281,8 @@ function BusInfo({ lat, lng }) {
         let uniqueList = Object.values(filteredMap);
 
         // ✅ 버스 번호 자연 정렬
-        uniqueList.sort((a, b) =>String(a.routeno).localeCompare(String(b.routeno), 'ko', { numeric: true })
-);
+        uniqueList.sort((a, b) => String(a.routeno).localeCompare(String(b.routeno), 'ko', { numeric: true })
+        );
 
         const nodenm = uniqueList[0].nodenm;
         let tab = '<table>';
