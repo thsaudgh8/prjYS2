@@ -1,5 +1,4 @@
 // 지도 기반 버스 정보 페이지
-// 위 코드의 Home은 카카오 맵에서 지도를 가져오는 코드이고, BusInfo은 좌표를 입력하면 그 좌표의 도시코드와 정류장 ID를 구하고, 구한 도시 코드와 정류장 ID로 그 정류장에 도착할 버스들의 정보를 구하는 코드야.그럴때, Home에서 가져온 지도의 버스정류장을 클릭해서, 클릭한 정류장의 좌료를 구하는 방법이 있니 ?
 
 import { Container, Typography } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
@@ -12,36 +11,45 @@ var rng = null;
 
 function Home() {
   const mapContainer = useRef(null);
-  const mapRef = useRef(null); // 지도 객체 저장
-  const [coords, setCoords] = useState({ lat: null, lng: null });
+    const mapRef = useRef(null);
+    const markerRef = useRef(null);   // 마커 참조를 위한 useRef
+    const [coords, setCoords] = useState({ lat: null, lng: null });
 
-  useEffect(() => {
-    // Kakao Maps SDK 스크립트 엘리먼트 생성
-    const script = document.createElement('script');
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${map_key}&autoload=false`;
-    script.async = true;
-    script.onload = () => {
-      window.kakao.maps.load(() => {
-        const options = {
-          center: new window.kakao.maps.LatLng(null, null), // 초기 중심 좌표: null
-          level: 3
-        };
-        mapRef.current = new window.kakao.maps.Map(mapContainer.current, options);
-        window.kakao.maps.event.addListener(mapRef.current, 'click', (mouseEvent) => {
-          rat = mouseEvent.latLng.getLat();
-          rng = mouseEvent.latLng.getLng();
-          // 클릭한 좌표를 이용해 BusInfo 컴포넌트의 상태를 업데이트
-          setCoords({ lat: rat, lng: rng });
-          const marker = new window.kakao.maps.Marker({
-            position: mouseEvent.latLng,
-            map: mapRef.current
-          });
-          marker.setMap(mapRef.current);
+    useEffect(() => {
+      const script = document.createElement('script');
+      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${map_key}&autoload=false`;
+      script.async = true;
+      script.onload = () => {
+        window.kakao.maps.load(() => {
+          const options = {
+            center: new window.kakao.maps.LatLng(null, null), // 기본 중심 좌표
+            level: 3
+          };
+          mapRef.current = new window.kakao.maps.Map(mapContainer.current, options);
+
+          // 클릭 이벤트 핸들러
+          window.kakao.maps.event.addListener(
+            mapRef.current,
+            'click',
+            (mouseEvent) => {
+              rat = mouseEvent.latLng.getLat();
+              rng = mouseEvent.latLng.getLng();
+              setCoords({ lat: rat, lng: rng });
+
+              // 이전 마커가 있으면 지도에서 제거
+              if (markerRef.current) {
+                markerRef.current.setMap(null);
+              }
+
+              // 새 마커 생성 및 ref에 저장
+              markerRef.current = new window.kakao.maps.Marker({
+                position: mouseEvent.latLng,
+                map: mapRef.current
+              });
         });
       });
     };
     document.head.appendChild(script);
-
 
     // 위치 추적 시작
     const watchID = navigator.geolocation.watchPosition((position) => {
@@ -58,12 +66,17 @@ function Home() {
   }, []);
 
   // coords가 변경될 때마다 지도 중심 갱신
-  useEffect(() => {
-    if (coords.lat && coords.lng && mapRef.current) {
-      const newCenter = new window.kakao.maps.LatLng(coords.lat, coords.lng);
-      mapRef.current.setCenter(newCenter);
+  navigator.geolocation.watchPosition((pos) => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    setCoords({ lat, lng });
+
+    // 위치추적 때만 중심 이동
+    if (mapRef.current) {
+      mapRef.current.setCenter(new window.kakao.maps.LatLng(lat, lng));
     }
-  }, [coords]);
+  });
+
 
   return (
     <Container
