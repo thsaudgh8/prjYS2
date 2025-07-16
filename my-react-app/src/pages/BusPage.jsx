@@ -16,13 +16,11 @@ function BusPage() {
   const [currentPosition, setCurrentPosition] = useState({ lat: null, lng: null });
   const [searchText, setSearchText] = useState('');
 
-  // 마커 이미지들은 window.kakao.maps가 로드된 후 만들어야 하므로
-  // ref에 저장해서 재사용 가능하게 처리
   const redMarkerImageRef = useRef(null);
   const greenMarkerImageRef = useRef(null);
 
-  // 카카오 주소 검색 서비스 객체
-  const geocoderRef = useRef(null);
+  // 카카오 주소 검색 서비스는 이제 안쓰고 Places 키워드 검색 사용하므로 삭제
+  // const geocoderRef = useRef(null);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -31,7 +29,6 @@ function BusPage() {
 
     script.onload = () => {
       window.kakao.maps.load(() => {
-        // 마커 이미지 초기화
         redMarkerImageRef.current = new window.kakao.maps.MarkerImage(
           'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
           new window.kakao.maps.Size(24, 35)
@@ -41,16 +38,13 @@ function BusPage() {
           new window.kakao.maps.Size(24, 35)
         );
 
-        // 지도 생성
         mapRef.current = new window.kakao.maps.Map(mapContainer.current, {
           center: new window.kakao.maps.LatLng(33.450701, 126.570667),
           level: 3,
         });
 
-        // 주소 검색 객체 생성
-        geocoderRef.current = new window.kakao.maps.services.Geocoder();
+        // geocoderRef.current = new window.kakao.maps.services.Geocoder();  // 이제 안 씀
 
-        // 현재 위치 가져오기
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const { latitude, longitude } = pos.coords;
@@ -70,7 +64,6 @@ function BusPage() {
           }
         );
 
-        // 지도 클릭 이벤트 등록
         window.kakao.maps.event.addListener(mapRef.current, 'click', (mouseEvent) => {
           const lat = mouseEvent.latLng.getLat();
           const lng = mouseEvent.latLng.getLng();
@@ -95,7 +88,6 @@ function BusPage() {
 
     document.head.appendChild(script);
 
-    // 컴포넌트 언마운트 시 스크립트 제거
     return () => {
       document.head.removeChild(script);
     };
@@ -131,13 +123,18 @@ function BusPage() {
 
   const handleSearch = () => {
     if (!searchText.trim()) return;
-    if (!geocoderRef.current) return;
+    if (!window.kakao || !window.kakao.maps) {
+      alert('카카오 지도 API가 준비되지 않았습니다.');
+      return;
+    }
 
-    geocoderRef.current.addressSearch(searchText, (result, status) => {
+    const ps = new window.kakao.maps.services.Places();
+
+    ps.keywordSearch(searchText, (result, status) => {
       if (status === window.kakao.maps.services.Status.OK) {
-        const loc = result[0];
-        const lat = parseFloat(loc.y);
-        const lng = parseFloat(loc.x);
+        const first = result[0];
+        const lat = parseFloat(first.y);
+        const lng = parseFloat(first.x);
         const latlng = new window.kakao.maps.LatLng(lat, lng);
 
         if (greenMarkerRef.current) {
