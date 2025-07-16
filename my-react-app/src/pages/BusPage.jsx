@@ -1,102 +1,192 @@
+// 지도 기반 버스 정보 페이지
+
+import { Container, Typography } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
-import { fetchBusStationAndArrival } from '../services/busService';
 
-const map_key = import.meta.env.VITE_WEATHER_MAP_API_KEY;
+const SERVICE_KEY = import.meta.env.VITE_BUS_API_KEY; // 실제 서비스키로 교체
+const map_key = import.meta.env.VITE_WEATHER_MAP_API_KEY; // 실제 지도 API 키로 교체
 
-function BusPage() {
+
+var rat = null;
+var rng = null;
+
+function Home() {
   const mapContainer = useRef(null);
-  const mapRef = useRef(null);
-  const markerRef = useRef(null);
-  const [coords, setCoords] = useState({ lat: null, lng: null });
-  const [busData, setBusData] = useState(null);
-  const [error, setError] = useState(null);
+    const mapRef = useRef(null);
+    const markerRef = useRef(null);   // 마커 참조를 위한 useRef
+    const [coords, setCoords] = useState({ lat: null, lng: null });
 
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${map_key}&autoload=false`;
-    script.async = true;
-    script.onload = () => {
-      window.kakao.maps.load(() => {
-        const mapOptions = {
-          center: new window.kakao.maps.LatLng(37.5665, 126.9780),
-          level: 3,
-        };
-        mapRef.current = new window.kakao.maps.Map(mapContainer.current, mapOptions);
+    useEffect(() => {
+      const script = document.createElement('script');
+      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${map_key}&autoload=false`;
+      script.async = true;
+      script.onload = () => {
+        window.kakao.maps.load(() => {
+          const options = {
+            center: new window.kakao.maps.LatLng(null, null), // 기본 중심 좌표
+            level: 3
+          };
+          mapRef.current = new window.kakao.maps.Map(mapContainer.current, options);
 
-        window.kakao.maps.event.addListener(mapRef.current, 'click', async (mouseEvent) => {
-          const lat = mouseEvent.latLng.getLat();
-          const lng = mouseEvent.latLng.getLng();
-          setCoords({ lat, lng });
+          // 클릭 이벤트 핸들러
+          window.kakao.maps.event.addListener(
+            mapRef.current,
+            'click',
+            (mouseEvent) => {
+              rat = mouseEvent.latLng.getLat();
+              rng = mouseEvent.latLng.getLng();
+              setCoords({ lat: rat, lng: rng });
 
-          if (markerRef.current) markerRef.current.setMap(null);
-          markerRef.current = new window.kakao.maps.Marker({
-            position: mouseEvent.latLng,
-            map: mapRef.current,
-          });
+              // 이전 마커가 있으면 지도에서 제거
+              if (markerRef.current) {
+                markerRef.current.setMap(null);
+              }
 
-          try {
-            const data = await fetchBusStationAndArrival(lat, lng);
-            setBusData(data);
-            setError(null);
-          } catch (e) {
-            setBusData(null);
-            setError('버스 정보를 불러오는 데 실패했습니다.');
-            console.error(e);
-          }
+              // 새 마커 생성 및 ref에 저장
+              markerRef.current = new window.kakao.maps.Marker({
+                position: mouseEvent.latLng,
+                map: mapRef.current
+              });
         });
       });
     };
     document.head.appendChild(script);
 
-    const watchID = navigator.geolocation.watchPosition((pos) => {
-      const { latitude, longitude } = pos.coords;
-      setCoords({ lat: latitude, lng: longitude });
-
-      if (mapRef.current) {
-        mapRef.current.setCenter(new window.kakao.maps.LatLng(latitude, longitude));
-      }
+    // 위치 추적 시작
+    const watchID = navigator.geolocation.watchPosition((position) => {
+      setCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
+      rat = position.coords.latitude;
+      rng = position.coords.longitude;
     });
 
+    // cleanup: 지도 스크립트 및 위치 추적 중지
     return () => {
       document.head.removeChild(script);
       navigator.geolocation.clearWatch(watchID);
     };
   }, []);
 
+  // coords가 변경될 때마다 지도 중심 갱신
+  navigator.geolocation.watchPosition((pos) => {
+    const lat = pos.coords.latitude;
+    const lng = pos.coords.longitude;
+    setCoords({ lat, lng });
+
+    // 위치추적 때만 중심 이동
+    if (mapRef.current) {
+      mapRef.current.setCenter(new window.kakao.maps.LatLng(lat, lng));
+    }
+  });
+
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'row', minHeight: '100vh' }}>
-      <div id="map" ref={mapContainer} style={{ width: '50%' }} />
-      <div style={{ width: '50%', padding: '20px' }}>
-        {error && <div>{error}</div>}
-        {!busData && !error && <div>지도를 클릭해 정류장을 선택하세요</div>}
-        {busData && (
-          <div>
-            <h3>{busData.stationName}</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>버스 번호</th>
-                  <th>도착 예정</th>
-                </tr>
-              </thead>
-              <tbody>
-                {busData.buses.map((bus, idx) => {
-                  const arrival = Math.floor(bus.arrtime / 60);
-                  const timeStr = arrival < 1 ? '곧 도착' : `${arrival}분`;
-                  return (
-                    <tr key={idx}>
-                      <td>{bus.routeno}</td>
-                      <td>{timeStr}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+    <Container
+      maxWidth="md"
+      sx={{
+        justifyContent: 'center',
+        minHeight: '80vh',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+      }}
+    >
+      <Typography variant="h5" gutterBottom>
+        버스 위치 지도
+      </Typography>
+      <div style={{ display: 'flex', flexDirection: 'row' }}>
+        <div
+          id="map"
+          ref={mapContainer}
+          style={{ width: '700px', height: '700px', marginRight: '700px' }}
+        />
+        <div style={{ minWidth: 'auto', maxWidth: 'auto', textAlign: 'center' }}>
+          <BusInfo lat={coords.lat} lng={coords.lng} />
+        </div>
       </div>
-    </div>
+    </Container>
   );
 }
 
-export default BusPage;
+function BusInfo({ lat, lng }) {
+  const [tableHtml, setTableHtml] = useState("");
+
+  useEffect(() => {
+    if (!lat || !lng) return;
+    function fetchAndRenderBusInfo() {
+      const url =
+        "http://apis.data.go.kr/1613000/BusSttnInfoInqireService/getCrdntPrxmtSttnList";
+      let queryParams =
+        "?" + encodeURIComponent("serviceKey") + "=" + SERVICE_KEY;
+      queryParams +=
+        "&" + encodeURIComponent("pageNo") + "=" + encodeURIComponent("1");
+      queryParams +=
+        "&" + encodeURIComponent("numOfRows") + "=" + encodeURIComponent("1");
+      queryParams +=
+        "&" + encodeURIComponent("_type") + "=" + encodeURIComponent("json");
+      queryParams +=
+        "&" + encodeURIComponent("gpsLati") + "=" + encodeURIComponent(rat);
+      queryParams +=
+        "&" + encodeURIComponent("gpsLong") + "=" + encodeURIComponent(rng);
+
+      fetch(url + queryParams)
+        .then((res) => res.json())
+        .then((response) => {
+          const item = response.response.body.items.item;
+          const citycode = item.citycode;
+          const nodeid = item.nodeid;
+
+          const url2 =
+            "http://apis.data.go.kr/1613000/ArvlInfoInqireService/getSttnAcctoArvlPrearngeInfoList";
+          let queryParams2 =
+            "?" + encodeURIComponent("serviceKey") + "=" + SERVICE_KEY;
+          queryParams2 +=
+            "&" + encodeURIComponent("pageNo") + "=" + encodeURIComponent("1");
+          queryParams2 +=
+            "&" + encodeURIComponent("numOfRows") + "=" + encodeURIComponent("50");
+          queryParams2 +=
+            "&" + encodeURIComponent("_type") + "=" + encodeURIComponent("json");
+          queryParams2 +=
+            "&" + encodeURIComponent("cityCode") + "=" + encodeURIComponent(citycode);
+          queryParams2 +=
+            "&" + encodeURIComponent("nodeId") + "=" + encodeURIComponent(nodeid);
+
+          fetch(url2 + queryParams2)
+            .then((res2) => res2.json())
+            .then((response2) => {
+              const items = response2.response.body.items.item;
+              if (!items || items.length === 0) {
+                setTableHtml("<div>버스 정보 없음</div>");
+                return;
+              }
+              const nodenm = items[0].nodenm;
+              let tab = "<table>";
+              tab += `<tr><th>${nodenm}</th></tr>`;
+              tab += "<tr><th>버스번호</th><th>도착예정</th></tr>";
+              items.forEach((bus) => {
+                const busNo = bus.routeno;
+                let arriveTime2 = Math.floor(bus.arrtime / 60);
+                if (arriveTime2 < 1) {
+                  arriveTime2 = "곧 도착";
+                  tab += `<tr><td>${busNo}</td><td>${arriveTime2}</td></tr>`;
+                } else {
+                  tab += `<tr><td>${busNo}</td><td>${arriveTime2}분</td></tr>`;
+                }
+              });
+              tab += "</table>";
+              setTableHtml(
+                `<div id="table-container" style="max-height:300px; overflow-y:auto;">${tab}</div>`
+              );
+            });
+        });
+    }
+    fetchAndRenderBusInfo();
+    const timer = setInterval(fetchAndRenderBusInfo, 60000);
+    return () => clearInterval(timer);
+  }, [lat, lng]);
+
+  return (
+    <div dangerouslySetInnerHTML={{ __html: tableHtml }} />
+  );
+}
+
+export default Home;
