@@ -238,15 +238,30 @@ function BusInfo({ lat, lng }) {
           return;
         }
 
-        const nodenm = arrivalList[0].nodenm;
+        // ✅ 중복 제거: 빠른 도착만 남기기
+        const filteredMap = {};
+        arrivalList.forEach((bus) => {
+          const key = bus.routeno;
+          if (!filteredMap[key] || bus.arrtime < filteredMap[key].arrtime) {
+            filteredMap[key] = bus;
+          }
+        });
+
+        let uniqueList = Object.values(filteredMap);
+
+        // ✅ 버스 번호 자연 정렬
+        uniqueList.sort((a, b) =>String(a.routeno).localeCompare(String(b.routeno), 'ko', { numeric: true })
+);
+
+        const nodenm = uniqueList[0].nodenm;
         let tab = '<table>';
-        tab += `<tr><th>${nodenm}</th></tr>`;
+        tab += `<tr><th colspan="2">${nodenm}</th></tr>`;
         tab += '<tr><th>버스번호</th><th>도착예정</th></tr>';
 
-        arrivalList.forEach((bus) => {
+        uniqueList.forEach((bus) => {
           const busNo = bus.routeno;
-          let arriveTime2 = Math.floor(bus.arrtime / 60);
-          const display = arriveTime2 < 1 ? '곧 도착' : `${arriveTime2}분`;
+          const arriveMin = Math.floor(bus.arrtime / 60);
+          const display = arriveMin < 1 ? '곧 도착' : `${arriveMin}분`;
           tab += `<tr><td>${busNo}</td><td>${display}</td></tr>`;
         });
 
@@ -261,11 +276,10 @@ function BusInfo({ lat, lng }) {
     }
 
     fetchAndRenderBusInfo();
-    const timer = setInterval(fetchAndRenderBusInfo, 60000);
+    const timer = setInterval(fetchAndRenderBusInfo, 60000); // 1분마다 갱신
     return () => clearInterval(timer);
   }, [lat, lng]);
 
   return <div dangerouslySetInnerHTML={{ __html: tableHtml }} />;
 }
-
 export default BusPage;
