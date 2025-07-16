@@ -1,5 +1,5 @@
-import { Container, Typography, Button, TextField } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
+import { Container, Typography, Button, TextField } from '@mui/material';
 import { fetchNearbyBusStop, fetchBusArrivalInfo } from '../services/busService';
 
 const map_key = import.meta.env.VITE_WEATHER_MAP_API_KEY;
@@ -8,45 +8,49 @@ function BusPage() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
 
-  const currentMarkerRef = useRef(null); // 빨간 현위치 마커
-  const clickMarkerRef = useRef(null); // 기본 클릭 마커
-  const greenMarkerRef = useRef(null); // 검색 위치 초록 마커
-
-  const placesRef = useRef(null); // 카카오 장소 검색 객체
+  const currentMarkerRef = useRef(null);
+  const clickMarkerRef = useRef(null);
+  const greenMarkerRef = useRef(null);
 
   const [coords, setCoords] = useState({ lat: null, lng: null });
   const [currentPosition, setCurrentPosition] = useState({ lat: null, lng: null });
   const [searchText, setSearchText] = useState('');
 
-  // 마커 이미지들
-  const redMarkerImage = new window.kakao.maps.MarkerImage(
-    'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
-    new window.kakao.maps.Size(24, 35)
-  );
-  const greenMarkerImage = new window.kakao.maps.MarkerImage(
-    'https://i.imgur.com/jp7b1kd.png',
-    new window.kakao.maps.Size(24, 35)
-  );
+  // 마커 이미지들은 window.kakao.maps가 로드된 후 만들어야 하므로
+  // ref에 저장해서 재사용 가능하게 처리
+  const redMarkerImageRef = useRef(null);
+  const greenMarkerImageRef = useRef(null);
 
   // 카카오 주소 검색 서비스 객체
   const geocoderRef = useRef(null);
 
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${map_key}&autoload=false&libraries=services,places`;
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${map_key}&autoload=false&libraries=services`;
     script.async = true;
 
     script.onload = () => {
       window.kakao.maps.load(() => {
+        // 마커 이미지 초기화
+        redMarkerImageRef.current = new window.kakao.maps.MarkerImage(
+          'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
+          new window.kakao.maps.Size(24, 35)
+        );
+        greenMarkerImageRef.current = new window.kakao.maps.MarkerImage(
+          'https://i.imgur.com/jp7b1kd.png',
+          new window.kakao.maps.Size(24, 35)
+        );
+
+        // 지도 생성
         mapRef.current = new window.kakao.maps.Map(mapContainer.current, {
           center: new window.kakao.maps.LatLng(33.450701, 126.570667),
           level: 3,
         });
 
+        // 주소 검색 객체 생성
         geocoderRef.current = new window.kakao.maps.services.Geocoder();
-        placesRef.current = new window.kakao.maps.services.Places();
 
-        // 최초 1회 현재 위치 가져오기
+        // 현재 위치 가져오기
         navigator.geolocation.getCurrentPosition(
           (pos) => {
             const { latitude, longitude } = pos.coords;
@@ -57,7 +61,7 @@ function BusPage() {
 
             currentMarkerRef.current = new window.kakao.maps.Marker({
               position: latlng,
-              image: redMarkerImage,
+              image: redMarkerImageRef.current,
               map: mapRef.current,
             });
           },
@@ -66,7 +70,7 @@ function BusPage() {
           }
         );
 
-        // 지도 클릭 시 마커 이동
+        // 지도 클릭 이벤트 등록
         window.kakao.maps.event.addListener(mapRef.current, 'click', (mouseEvent) => {
           const lat = mouseEvent.latLng.getLat();
           const lng = mouseEvent.latLng.getLng();
@@ -81,7 +85,6 @@ function BusPage() {
             map: mapRef.current,
           });
 
-          // 초록 마커 있으면 제거 (검색 위치 마커는 클릭 시 삭제)
           if (greenMarkerRef.current) {
             greenMarkerRef.current.setMap(null);
             greenMarkerRef.current = null;
@@ -92,12 +95,12 @@ function BusPage() {
 
     document.head.appendChild(script);
 
+    // 컴포넌트 언마운트 시 스크립트 제거
     return () => {
       document.head.removeChild(script);
     };
   }, []);
 
-  // 현위치로 돌아가기 버튼
   const handleGoCurrentLocation = () => {
     if (!currentPosition.lat || !currentPosition.lng) return;
 
@@ -105,60 +108,51 @@ function BusPage() {
     mapRef.current.setCenter(latlng);
     setCoords({ lat: currentPosition.lat, lng: currentPosition.lng });
 
-    // 클릭 마커 제거
     if (clickMarkerRef.current) {
       clickMarkerRef.current.setMap(null);
       clickMarkerRef.current = null;
     }
 
-    // 초록 마커 제거
     if (greenMarkerRef.current) {
       greenMarkerRef.current.setMap(null);
       greenMarkerRef.current = null;
     }
 
-    // 빨간 마커 위치 업데이트
     if (currentMarkerRef.current) {
       currentMarkerRef.current.setPosition(latlng);
     } else {
       currentMarkerRef.current = new window.kakao.maps.Marker({
         position: latlng,
-        image: redMarkerImage,
+        image: redMarkerImageRef.current,
         map: mapRef.current,
       });
     }
   };
 
-  // 검색 실행 함수 - keywordSearch 사용
   const handleSearch = () => {
     if (!searchText.trim()) return;
-    if (!placesRef.current) return;
+    if (!geocoderRef.current) return;
 
-    placesRef.current.keywordSearch(searchText, (result, status) => {
+    geocoderRef.current.addressSearch(searchText, (result, status) => {
       if (status === window.kakao.maps.services.Status.OK) {
         const loc = result[0];
         const lat = parseFloat(loc.y);
         const lng = parseFloat(loc.x);
         const latlng = new window.kakao.maps.LatLng(lat, lng);
 
-        // 초록 마커 위치 설정
         if (greenMarkerRef.current) {
           greenMarkerRef.current.setPosition(latlng);
         } else {
           greenMarkerRef.current = new window.kakao.maps.Marker({
             position: latlng,
-            image: greenMarkerImage,
+            image: greenMarkerImageRef.current,
             map: mapRef.current,
           });
         }
 
-        // 지도 중심 이동
         mapRef.current.setCenter(latlng);
-
-        // coords 상태 변경 → BusInfo 갱신
         setCoords({ lat, lng });
 
-        // 클릭 마커 제거 (검색 위치가 우선)
         if (clickMarkerRef.current) {
           clickMarkerRef.current.setMap(null);
           clickMarkerRef.current = null;
