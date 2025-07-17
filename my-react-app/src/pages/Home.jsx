@@ -10,8 +10,8 @@ const exampleWeather = {
 };
 
 const exampleDust = {
-  pm10: 35,
-  pm25: 15,
+  pm10Hourly: [20, 25, 30, 35, 40, 45],  // 1시간 간격 예시
+  pm25Hourly: [10, 12, 15, 18, 20, 22],
 };
 
 function Home() {
@@ -81,7 +81,9 @@ function Home() {
       <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
         {/* 주소 표시 */}
         <Card sx={{ p: 2, bgcolor: '#81d4fa', color: 'white', borderRadius: 2 }}>
-          <Typography variant="h6" fontWeight="bold">현위치 주소</Typography>
+          <Typography variant="h6" fontWeight="bold">
+            현위치 주소
+          </Typography>
           <Typography>{address}</Typography>
         </Card>
 
@@ -99,10 +101,10 @@ function Home() {
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
-          height: '100%',
+          height: '500px', // 지도 높이에 맞춤
         }}
       >
-        {/* 현재 날씨 카드 */}
+        {/* 날씨 카드 */}
         <Card
           sx={{
             p: 2,
@@ -111,7 +113,8 @@ function Home() {
             borderRadius: 2,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center',
+            justifyContent: 'flex-start',
+            flex: 1, // 1:1 비율을 위해 flex 1
           }}
           elevation={4}
         >
@@ -123,31 +126,31 @@ function Home() {
           </Typography>
           <Typography variant="subtitle1">{exampleWeather.condition}</Typography>
 
-          {/* 6시간 예보 카드 */}
+          {/* 1시간 간격 6시간 미니카드 */}
           <Box
             sx={{
               display: 'flex',
               gap: 1,
               mt: 2,
-              flexWrap: 'wrap',
-              justifyContent: 'space-between',
+              flexWrap: 'nowrap',
+              overflowX: 'auto',
             }}
           >
             {[1, 2, 3, 4, 5, 6].map((hour) => (
               <Card
                 key={hour}
                 sx={{
-                  flex: '1 1 30%',
                   minWidth: '55px',
                   bgcolor: 'rgba(255, 255, 255, 0.2)',
                   color: 'white',
                   p: 1,
                   borderRadius: 2,
                   textAlign: 'center',
+                  flexShrink: 0,
                 }}
                 elevation={1}
               >
-                <Typography variant="body2">{hour}시간 뒤</Typography>
+                <Typography variant="body2">{hour}시 후</Typography>
                 <Typography variant="h6">☁️</Typography>
                 <Typography variant="body2">24°C</Typography>
               </Card>
@@ -161,19 +164,52 @@ function Home() {
             p: 2,
             bgcolor: '#aed581',
             color: '#3e2723',
-            flexBasis: '45%',
+            flex: 1, // 1:1 비율
             borderRadius: 2,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'center',
+            justifyContent: 'flex-start',
           }}
           elevation={4}
         >
           <Typography variant="h6" fontWeight="bold" mb={1}>
             미세먼지 정보
           </Typography>
-          <Typography>PM10: {exampleDust.pm10} ㎍/㎥</Typography>
-          <Typography>PM2.5: {exampleDust.pm25} ㎍/㎥</Typography>
+
+          {/* 1시간 간격 미세먼지 수치 카드 */}
+          <Box
+            sx={{
+              display: 'flex',
+              gap: 1,
+              flexWrap: 'nowrap',
+              overflowX: 'auto',
+            }}
+          >
+            {exampleDust.pm10Hourly.map((pm10, idx) => (
+              <Card
+                key={idx}
+                sx={{
+                  minWidth: '55px',
+                  bgcolor: 'rgba(255, 255, 255, 0.7)',
+                  color: '#3e2723',
+                  p: 1,
+                  borderRadius: 2,
+                  textAlign: 'center',
+                  flexShrink: 0,
+                }}
+                elevation={1}
+              >
+                <Typography variant="body2">{idx + 1}시 후</Typography>
+                <Typography variant="body1" fontWeight="bold">
+                  PM10
+                </Typography>
+                <Typography variant="h6">{pm10}㎍/㎥</Typography>
+                <Typography variant="body2" color="textSecondary">
+                  PM2.5: {exampleDust.pm25Hourly[idx]}㎍/㎥
+                </Typography>
+              </Card>
+            ))}
+          </Box>
         </Card>
       </Box>
     </Container>
