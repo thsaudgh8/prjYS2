@@ -1,63 +1,93 @@
-import React, { useState } from 'react';
-import { Card, Typography, Grid, Collapse } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Card, Box, Typography } from '@mui/material';
+import { fetchUltraShortForecast } from '../services/weatherService';
 
-function HomeWeather({ address, lat, lon }) {
-  const [showHourly, setShowHourly] = useState(false);
 
-  // TODO: 실제 API 호출해서 날씨 데이터 받기
-  const weatherData = {
-    now: { temp: 27, condition: '맑음', icon: '☀️' },
-    hourly: [
-      { time: '13시', icon: '☀️', high: 27, low: 18 },
-      { time: '14시', icon: '🌤️', high: 26, low: 18 },
-      { time: '15시', icon: '🌥️', high: 25, low: 18 },
-    ],
-  };
+
+function HomeWeather({ nx, ny }) {
+  const [weatherData, setWeatherData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!nx || !ny) return;
+    setLoading(true);
+    fetchUltraShortForecast(nx, ny)
+      .then((data) => {
+        setWeatherData(data);
+        setLoading(false);
+      })
+      .catch((e) => {
+        setError(e.message);
+        setLoading(false);
+      });
+  }, [nx, ny]);
+
+  if (loading) return <Typography>날씨 불러오는 중...</Typography>;
+  if (error) return <Typography color="error">날씨 정보 오류: {error}</Typography>;
+
+  // 대표 온도, 아이콘 등은 첫 데이터 기준
+  const current = weatherData[0] || {};
 
   return (
-    <>
-      <Card
-        onClick={() => setShowHourly(!showHourly)}
-        sx={{
-          cursor: 'pointer',
-          bgcolor: '#81d4fa',
-          color: 'white',
-          p: 2,
-        }}
-        elevation={4}
-      >
-        <Typography variant="h6" fontWeight="bold" gutterBottom>
-          현재 날씨 - {address}
+    <Card
+      sx={{
+        p: 2,
+        bgcolor: '#4fc3f7',
+        color: 'white',
+        borderRadius: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        flex: 1,
+      }}
+      elevation={4}
+    >
+      <Box>
+        <Typography variant="h6" fontWeight="bold" mb={0.5}>
+          현재 날씨
         </Typography>
-        <Typography variant="h3" mt={1}>
-          {weatherData.now.temp}°C {weatherData.now.icon} {weatherData.now.condition}
+        <Typography variant="h4" fontWeight="bold" lineHeight={1} mb={0.5}>
+          {current.temp ?? '--'}°C {current.sky === '1' ? '☀️' : current.sky === '3' ? '☁️' : '🌧️'}
         </Typography>
-        <Typography sx={{ fontSize: '0.8rem', opacity: 0.8 }}>
-          (클릭하면 시간별 날씨 보기)
-        </Typography>
-      </Card>
+        {/* 하늘 상태 글자 등 추가 가능 */}
+      </Box>
 
-      <Collapse in={showHourly} timeout="auto" unmountOnExit>
-        <Grid container spacing={1} sx={{ mt: 1 }}>
-          {weatherData.hourly.map((hour, idx) => (
-            <Grid item xs={4} key={idx}>
-              <Card
-                sx={{ bgcolor: '#4fc3f7', color: 'white', p: 1, textAlign: 'center' }}
-                elevation={3}
-              >
-                <Typography variant="subtitle1" fontWeight="bold">
-                  {hour.time}
-                </Typography>
-                <Typography variant="h4">{hour.icon}</Typography>
-                <Typography>
-                  {hour.high}° / {hour.low}°
-                </Typography>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Collapse>
-    </>
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 0.5,
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+        }}
+      >
+        {weatherData.map(({ time, temp, sky }, idx) => (
+          <Card
+            key={time}
+            sx={{
+              width: 50,
+              bgcolor: 'rgba(255, 255, 255, 0.2)',
+              color: 'white',
+              p: 0.5,
+              borderRadius: 2,
+              textAlign: 'center',
+              flexShrink: 0,
+            }}
+            elevation={1}
+          >
+            <Typography variant="caption" lineHeight={1}>
+              {idx + 1}시 후
+            </Typography>
+            <Typography variant="body1" lineHeight={1} mb={0.2}>
+              {sky === '1' ? '☀️' : sky === '3' ? '☁️' : '🌧️'}
+            </Typography>
+            <Typography variant="caption" lineHeight={1}>
+              {temp}°C
+            </Typography>
+          </Card>
+        ))}
+      </Box>
+    </Card>
   );
 }
 
