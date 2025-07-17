@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { Card, Box, Typography } from '@mui/material';
 import { fetchUltraShortForecast } from '../services/weatherService';
 
-
-
 function HomeWeather({ nx, ny }) {
   const [weatherData, setWeatherData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -11,22 +9,42 @@ function HomeWeather({ nx, ny }) {
 
   useEffect(() => {
     if (!nx || !ny) return;
-    setLoading(true);
-    fetchUltraShortForecast(nx, ny)
-      .then((data) => {
-        setWeatherData(data);
-        setLoading(false);
-      })
-      .catch((e) => {
-        setError(e.message);
-        setLoading(false);
-      });
+
+    let isMounted = true;
+    let intervalId;
+
+    const fetchData = () => {
+      setLoading(true);
+      fetchUltraShortForecast(nx, ny)
+        .then((data) => {
+          if (isMounted) {
+            setWeatherData(data);
+            setLoading(false);
+            setError(null);
+          }
+        })
+        .catch((e) => {
+          if (isMounted) {
+            setError(e.message);
+            setLoading(false);
+          }
+        });
+    };
+
+    fetchData(); // 초기 호출
+
+    // 10분마다 갱신
+    intervalId = setInterval(fetchData, 10 * 60 * 1000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(intervalId);
+    };
   }, [nx, ny]);
 
   if (loading) return <Typography>날씨 불러오는 중...</Typography>;
   if (error) return <Typography color="error">날씨 정보 오류: {error}</Typography>;
 
-  // 대표 온도, 아이콘 등은 첫 데이터 기준
   const current = weatherData[0] || {};
 
   return (
@@ -50,7 +68,6 @@ function HomeWeather({ nx, ny }) {
         <Typography variant="h4" fontWeight="bold" lineHeight={1} mb={0.5}>
           {current.temp ?? '--'}°C {current.sky === '1' ? '☀️' : current.sky === '3' ? '☁️' : '🌧️'}
         </Typography>
-        {/* 하늘 상태 글자 등 추가 가능 */}
       </Box>
 
       <Box

@@ -3,6 +3,7 @@ import { Container, Box, Typography } from '@mui/material';
 import { useLocation } from '../hooks/useLocation';
 import HomeWeather from '../components/HomeWeather';
 import HomeDust from '../components/HomeDust';
+import { convertLatLonToGrid } from '../utils/convertGrid'; // 좌표 변환 함수 경로 맞게 조정
 
 function Home() {
   const { location, loading, error } = useLocation();
@@ -24,10 +25,13 @@ function Home() {
     document.head.appendChild(script);
   }, []);
 
-  // Kakao Map 초기화
+  // Kakao Map 초기화 및 주소 변환
   useEffect(() => {
     if (!kakaoLoaded) return;
-    if (loading || !location?.lat || !location?.lon || !mapRef.current || map) return;
+    if (loading || !location?.lat || !location?.lon || !mapRef.current) return;
+
+    // 이미 지도 생성되어 있으면 새로 생성하지 않음
+    if (map) return;
 
     window.kakao.maps.load(() => {
       const container = mapRef.current;
@@ -57,11 +61,10 @@ function Home() {
   if (loading) return <Typography>위치 정보를 불러오는 중...</Typography>;
   if (error) return <Typography color="error">위치 정보 오류: {error}</Typography>;
 
-  // 임시 nx, ny 좌표 (나중에 위치에 맞게 변환 필요)
-  const nx = 60; // 예시
-  const ny = 127; // 예시
+  // location이 있을 때만 nx, ny 계산 (기상청 격자 좌표)
+  const { nx, ny } = location ? convertLatLonToGrid(location.lat, location.lon) : { nx: null, ny: null };
 
-  // 미세먼지 더미 데이터 (나중에 실제 API 연동)
+  // 임시 미세먼지 더미 데이터 (추후 실제 API 연동 필요)
   const pm10Hourly = [20, 25, 30, 35, 40, 45];
   const pm25Hourly = [10, 12, 15, 18, 20, 22];
 
@@ -116,8 +119,14 @@ function Home() {
           height: { xs: 'auto', md: '500px' },
         }}
       >
-        <HomeWeather nx={nx} ny={ny} />
-        <HomeDust pm10Hourly={pm10Hourly} pm25Hourly={pm25Hourly} />
+        {nx && ny ? (
+          <>
+            <HomeWeather nx={nx} ny={ny} />
+            <HomeDust pm10Hourly={pm10Hourly} pm25Hourly={pm25Hourly} />
+          </>
+        ) : (
+          <Typography>현재 위치 기반 좌표를 계산 중입니다...</Typography>
+        )}
       </Box>
     </Container>
   );
