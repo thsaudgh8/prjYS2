@@ -93,7 +93,7 @@ function HomeWeather({ nx, ny }) {
             elevation={1}
           >
             <Typography variant="caption" lineHeight={1}>
-              {idx + 1}시 후
+              {idx + 1}시간 후
             </Typography>
             <Typography variant="body1" lineHeight={1} mb={0.2}>
               {sky === '1' ? '☀️' : sky === '3' ? '☁️' : '🌧️'}
