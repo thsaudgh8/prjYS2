@@ -10,7 +10,7 @@ const exampleWeather = {
 };
 
 const exampleDust = {
-  pm10Hourly: [20, 25, 30, 35, 40, 45],  // 1시간 간격 예시
+  pm10Hourly: [20, 25, 30, 35, 40, 45], // 1시간 간격 예시
   pm25Hourly: [10, 12, 15, 18, 20, 22],
 };
 
@@ -27,7 +27,7 @@ function Home() {
       return;
     }
     const script = document.createElement('script');
-    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_WEATHER_MAP_API_KEY}&libraries=services&autoload=false`;
+    script.src = "https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_WEATHER_MAP_API_KEY}&libraries=services&autoload=false;"
     script.async = true;
     script.onload = () => setKakaoLoaded(true);
     document.head.appendChild(script);
@@ -75,11 +75,22 @@ function Home() {
         display: 'flex',
         gap: 2,
         py: 4,
+        px: { xs: 2, sm: 4, md: 8 },
+        flexDirection: { xs: 'column', md: 'row' },
       }}
     >
-      {/* 좌측 지도 + 주소 영역 */}
-      <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {/* 주소 표시 */}
+      {/* 좌측 지도+주소 영역 */}
+      <Box
+        sx={{
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          height: { xs: 'auto', md: '750px' },
+          minHeight: { xs: 400, md: 0 },
+        }}
+      >
+        {/* 주소 카드 */}
         <Card sx={{ p: 2, bgcolor: '#81d4fa', color: 'white', borderRadius: 2 }}>
           <Typography variant="h6" fontWeight="bold">
             현위치 주소
@@ -90,18 +101,23 @@ function Home() {
         {/* 지도 */}
         <Box
           ref={mapRef}
-          sx={{ flex: 1, height: '500px', borderRadius: 2, bgcolor: '#e0e0e0' }}
+          sx={{
+            flex: 1,
+            borderRadius: 2,
+            bgcolor: '#e0e0e0',
+            minHeight: { xs: 200, md: 0 },
+          }}
         />
       </Box>
 
       {/* 우측 날씨+미세먼지 영역 */}
       <Box
         sx={{
-          flexBasis: '400px',
+          flexBasis: { xs: '100%', md: '400px' },
           display: 'flex',
           flexDirection: 'column',
           gap: 2,
-          height: '500px', // 지도 높이에 맞춤
+          height: { xs: 'auto', md: '500px' },
         }}
       >
         {/* 날씨 카드 */}
@@ -113,7 +129,7 @@ function Home() {
             borderRadius: 2,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'space-between',  // 상하 공간 분배
+            justifyContent: 'space-between',
             flex: 1,
           }}
           elevation={4}
@@ -135,7 +151,7 @@ function Home() {
             sx={{
               display: 'flex',
               gap: 0.5,
-              flexWrap: 'wrap',       // 여러 줄 허용
+              flexWrap: 'wrap',
               justifyContent: 'center',
             }}
           >
@@ -189,7 +205,7 @@ function Home() {
             sx={{
               display: 'flex',
               gap: 0.5,
-              flexWrap: 'wrap',  // 여러 줄 허용
+              flexWrap: 'wrap',
               justifyContent: 'center',
             }}
           >
