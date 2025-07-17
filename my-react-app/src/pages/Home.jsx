@@ -26,12 +26,14 @@ function Home() {
       setKakaoLoaded(true);
       return;
     }
+
     const script = document.createElement('script');
-    script.src = "https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_WEATHER_MAP_API_KEY}&libraries=services&autoload=false;"
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${import.meta.env.VITE_WEATHER_MAP_API_KEY}&libraries=services&autoload=false`;
     script.async = true;
     script.onload = () => setKakaoLoaded(true);
     document.head.appendChild(script);
   }, []);
+
 
   useEffect(() => {
     if (!kakaoLoaded) return;
