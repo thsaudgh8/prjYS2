@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-=======
-// useLocation.js
-
->>>>>>> f6330e6e1a2ca254b6b87a7a668c8db2cbcf7a64
 import { useState, useEffect } from "react";
 
 export function useLocation() {
@@ -31,14 +26,10 @@ export function useLocation() {
         console.log("❌ 위치 정보 가져오기 실패:", err.message);
         setError(err.message);
         setLoading(false);
-      },
-      {
-        enableHighAccuracy: true, // 🎯 더 정확한 위치 요청 (가능한 경우에만)
-        timeout: 10000,           // 응답 최대 10초까지 대기
-        maximumAge: 0             // 캐시된 위치 정보 사용하지 않음
       }
     );
   }, []);
 
   return { location, loading, error };
 }
+  

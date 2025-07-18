@@ -15,8 +15,4 @@ function useAverageDust() {
   return avgData;
 }
 
-<<<<<<< HEAD
 export default useAverageDust;
-=======
-export default useAverageDust;
->>>>>>> f6330e6e1a2ca254b6b87a7a668c8db2cbcf7a64

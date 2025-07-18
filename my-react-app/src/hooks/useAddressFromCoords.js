@@ -46,8 +46,4 @@ export default function useAddressFromCoords(lat, lon) {
   }, [lat, lon]);
 
   return { address, loading, error };
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> f6330e6e1a2ca254b6b87a7a668c8db2cbcf7a64
