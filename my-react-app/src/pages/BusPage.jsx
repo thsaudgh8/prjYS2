@@ -3,7 +3,6 @@
 import { Container, Typography, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, Paper } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
 
-
 const SERVICE_KEY = import.meta.env.VITE_BUS_KEY; // 실제 서비스키로 교체
 const map_key = import.meta.env.VITE_MAP_KEY; // 실제 지도 API 키로 교체
 var rat = null;
@@ -12,72 +11,93 @@ var nodenm = null;
 
 function Home() {
   const mapContainer = useRef(null);
-    const mapRef = useRef(null);
-    const markerRef = useRef(null);   // 마커 참조를 위한 useRef
-    const [coords, setCoords] = useState({ lat: null, lng: null });
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);        // 클릭 마커
+  const currentMarkerRef = useRef(null); // 현재 위치 빨간 마커
+  const [coords, setCoords] = useState({ lat: null, lng: null });
 
-    useEffect(() => {
-      const script = document.createElement('script');
-      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${map_key}&autoload=false`;
-      script.async = true;
-      script.onload = () => {
-        window.kakao.maps.load(() => {
-          const options = {
-            center: new window.kakao.maps.LatLng(null, null), // 기본 중심 좌표
-            level: 3
-          };
-          mapRef.current = new window.kakao.maps.Map(mapContainer.current, options);
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${map_key}&autoload=false`;
+    script.async = true;
+    script.onload = () => {
+      window.kakao.maps.load(() => {
+        const options = {
+          center: new window.kakao.maps.LatLng(37.5665, 126.9780), // 초기 중심 좌표 (서울 시청 등 기본값)
+          level: 3,
+        };
+        mapRef.current = new window.kakao.maps.Map(mapContainer.current, options);
 
-          // 클릭 이벤트 핸들러
-          window.kakao.maps.event.addListener(
-            mapRef.current,
-            'click',
-            (mouseEvent) => {
-              rat = mouseEvent.latLng.getLat();
-              rng = mouseEvent.latLng.getLng();
-              setCoords({ lat: rat, lng: rng });
+        // 지도 클릭 이벤트 - 클릭 위치 마커 표시
+        window.kakao.maps.event.addListener(
+          mapRef.current,
+          'click',
+          (mouseEvent) => {
+            rat = mouseEvent.latLng.getLat();
+            rng = mouseEvent.latLng.getLng();
+            setCoords({ lat: rat, lng: rng });
 
-              // 이전 마커가 있으면 지도에서 제거
-              if (markerRef.current) {
-                markerRef.current.setMap(null);
-              }
+            if (markerRef.current) {
+              markerRef.current.setMap(null);
+            }
 
-              // 새 마커 생성 및 ref에 저장
-              markerRef.current = new window.kakao.maps.Marker({
-                position: mouseEvent.latLng,
-                map: mapRef.current
-              });
-        });
+            markerRef.current = new window.kakao.maps.Marker({
+              position: mouseEvent.latLng,
+              map: mapRef.current,
+            });
+          }
+        );
       });
     };
     document.head.appendChild(script);
 
-    // 위치 추적 시작
-    const watchID = navigator.geolocation.watchPosition((position) => {
-      setCoords({ lat: position.coords.latitude, lng: position.coords.longitude });
-      rat = position.coords.latitude;
-      rng = position.coords.longitude;
-    });
+    // 현재 위치 추적 및 빨간 마커 표시
+    const watchID = navigator.geolocation.watchPosition(
+      (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
 
-    // cleanup: 지도 스크립트 및 위치 추적 중지
+        setCoords({ lat, lng });
+        rat = lat;
+        rng = lng;
+
+        const latlng = new window.kakao.maps.LatLng(lat, lng);
+
+        if (mapRef.current) {
+          mapRef.current.setCenter(latlng);
+        }
+
+        // 기존 현재 위치 마커 제거
+        if (currentMarkerRef.current) {
+          currentMarkerRef.current.setMap(null);
+        }
+
+        // 빨간 마커 이미지
+        const redMarkerImage = new window.kakao.maps.MarkerImage(
+          'http://t1.daumcdn.net/localimg/localimages/07/mapapidoc/marker_red.png',
+          new window.kakao.maps.Size(40, 42),
+          { offset: new window.kakao.maps.Point(13, 42) }
+        );
+
+        // 현재 위치 빨간 마커 생성
+        currentMarkerRef.current = new window.kakao.maps.Marker({
+          position: latlng,
+          image: redMarkerImage,
+          map: mapRef.current,
+        });
+      },
+      (error) => {
+        console.error('현재 위치 정보를 가져올 수 없습니다.', error);
+      },
+      { enableHighAccuracy: true }
+    );
+
+    // 정리(cleanup)
     return () => {
       document.head.removeChild(script);
       navigator.geolocation.clearWatch(watchID);
     };
   }, []);
-
-  // coords가 변경될 때마다 지도 중심 갱신
-  navigator.geolocation.watchPosition((pos) => {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    setCoords({ lat, lng });
-
-    // 위치추적 때만 중심 이동
-    if (mapRef.current) {
-      mapRef.current.setCenter(new window.kakao.maps.LatLng(lat, lng));
-    }
-  });
-
 
   return (
     <Container
@@ -112,42 +132,34 @@ function BusInfo({ lat, lng }) {
 
   useEffect(() => {
     if (!lat || !lng) return;
+
     function fetchAndRenderBusInfo() {
-      const url =
-        "http://apis.data.go.kr/1613000/BusSttnInfoInqireService/getCrdntPrxmtSttnList";
-      let queryParams =
-        "?" + encodeURIComponent("serviceKey") + "=" + SERVICE_KEY;
-      queryParams +=
-        "&" + encodeURIComponent("pageNo") + "=" + encodeURIComponent("1");
-      queryParams +=
-        "&" + encodeURIComponent("numOfRows") + "=" + encodeURIComponent("1");
-      queryParams +=
-        "&" + encodeURIComponent("_type") + "=" + encodeURIComponent("json");
-      queryParams +=
-        "&" + encodeURIComponent("gpsLati") + "=" + encodeURIComponent(rat);
-      queryParams +=
-        "&" + encodeURIComponent("gpsLong") + "=" + encodeURIComponent(rng);
+      const url = "http://apis.data.go.kr/1613000/BusSttnInfoInqireService/getCrdntPrxmtSttnList";
+      let queryParams = "?" + encodeURIComponent("serviceKey") + "=" + SERVICE_KEY;
+      queryParams += "&" + encodeURIComponent("pageNo") + "=" + encodeURIComponent("1");
+      queryParams += "&" + encodeURIComponent("numOfRows") + "=" + encodeURIComponent("1");
+      queryParams += "&" + encodeURIComponent("_type") + "=" + encodeURIComponent("json");
+      queryParams += "&" + encodeURIComponent("gpsLati") + "=" + encodeURIComponent(rat);
+      queryParams += "&" + encodeURIComponent("gpsLong") + "=" + encodeURIComponent(rng);
 
       fetch(url + queryParams)
         .then((res) => res.json())
         .then((response) => {
           const item = response.response.body.items.item;
+          if (!item) {
+            setBusData([]);
+            nodenm = null;
+            return;
+          }
           const citycode = item.citycode;
           const nodeid = item.nodeid;
-          const url2 =
-            "http://apis.data.go.kr/1613000/ArvlInfoInqireService/getSttnAcctoArvlPrearngeInfoList";
-          let queryParams2 =
-            "?" + encodeURIComponent("serviceKey") + "=" + SERVICE_KEY;
-          queryParams2 +=
-            "&" + encodeURIComponent("pageNo") + "=" + encodeURIComponent("1");
-          queryParams2 +=
-            "&" + encodeURIComponent("numOfRows") + "=" + encodeURIComponent("50");
-          queryParams2 +=
-            "&" + encodeURIComponent("_type") + "=" + encodeURIComponent("json");
-          queryParams2 +=
-            "&" + encodeURIComponent("cityCode") + "=" + encodeURIComponent(citycode);
-          queryParams2 +=
-            "&" + encodeURIComponent("nodeId") + "=" + encodeURIComponent(nodeid);
+          const url2 = "http://apis.data.go.kr/1613000/ArvlInfoInqireService/getSttnAcctoArvlPrearngeInfoList";
+          let queryParams2 = "?" + encodeURIComponent("serviceKey") + "=" + SERVICE_KEY;
+          queryParams2 += "&" + encodeURIComponent("pageNo") + "=" + encodeURIComponent("1");
+          queryParams2 += "&" + encodeURIComponent("numOfRows") + "=" + encodeURIComponent("50");
+          queryParams2 += "&" + encodeURIComponent("_type") + "=" + encodeURIComponent("json");
+          queryParams2 += "&" + encodeURIComponent("cityCode") + "=" + encodeURIComponent(citycode);
+          queryParams2 += "&" + encodeURIComponent("nodeId") + "=" + encodeURIComponent(nodeid);
 
           fetch(url2 + queryParams2)
             .then((res2) => res2.json())
@@ -185,7 +197,7 @@ function BusInfo({ lat, lng }) {
       <Table sx={{ minWidth: 200 }} aria-label="bus info table">
         <TableHead>
           <TableRow>
-            <TableCell>{nodenm}</TableCell>
+            <TableCell>{nodenm || '버스 정류장'}</TableCell>
           </TableRow>
           <TableRow>
             <TableCell>버스종류</TableCell>
