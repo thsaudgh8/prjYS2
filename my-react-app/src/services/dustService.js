@@ -55,4 +55,7 @@ export async function fetchGyeonggiAvgDust() {
     return null;
   }
 }
+<<<<<<< HEAD
 
+=======
+>>>>>>> kin

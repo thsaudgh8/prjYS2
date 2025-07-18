@@ -8,7 +8,10 @@ import AverageDustCard from '../components/AverageDustCard';
 function DustPage() {
   const { location, loading: locLoading, error: locError } = useLocation();
 
+<<<<<<< HEAD
   // location이 null일 수도 있으니 안전하게 할당
+=======
+>>>>>>> kin
   const lat = location?.lat;
   const lon = location?.lon;
 
