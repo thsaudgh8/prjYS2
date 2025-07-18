@@ -1,7 +1,10 @@
 // 지도 기반 버스 정보 페이지
 
-import { Container, Typography, Table, TableHead, TableBody, TableRow, TableCell, TableContainer, Paper } from '@mui/material';
 import React, { useEffect, useRef, useState } from 'react';
+import {
+  Container, Typography, Table, TableHead,
+  TableBody, TableRow, TableCell, TableContainer, Paper
+} from '@mui/material';
 
 const SERVICE_KEY = import.meta.env.VITE_BUS_KEY; // 실제 서비스키로 교체
 const map_key = import.meta.env.VITE_MAP_KEY; // 실제 지도 API 키로 교체
@@ -9,44 +12,48 @@ var rat = null;
 var rng = null;
 var nodenm = null;
 
+
 function Home() {
   const mapContainer = useRef(null);
-    const mapRef = useRef(null);
-    const markerRef = useRef(null);   // 마커 참조를 위한 useRef
-    const [coords, setCoords] = useState({ lat: null, lng: null });
+  const mapRef = useRef(null);
+  const markerRef = useRef(null);   // 마커 참조를 위한 useRef
+  const [coords, setCoords] = useState({ lat: null, lng: null });
+  const isClick = useRef(false); // 클릭 여부 추적
 
-    useEffect(() => {
-      const script = document.createElement('script');
-      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${map_key}&autoload=false`;
-      script.async = true;
-      script.onload = () => {
-        window.kakao.maps.load(() => {
-          const options = {
-            center: new window.kakao.maps.LatLng(null, null), // 기본 중심 좌표
-            level: 3
-          };
-          mapRef.current = new window.kakao.maps.Map(mapContainer.current, options);
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${map_key}&autoload=false`;
+    script.async = true;
+    script.onload = () => {
+      window.kakao.maps.load(() => {
+        const options = {
+          center: new window.kakao.maps.LatLng(null, null), // 기본 중심 좌표
+          level: 3
+        };
+        mapRef.current = new window.kakao.maps.Map(mapContainer.current, options);
 
-          // 클릭 이벤트 핸들러
-          window.kakao.maps.event.addListener(
-            mapRef.current,
-            'click',
-            (mouseEvent) => {
-              rat = mouseEvent.latLng.getLat();
-              rng = mouseEvent.latLng.getLng();
-              setCoords({ lat: rat, lng: rng });
+        // 클릭 이벤트 핸들러
+        window.kakao.maps.event.addListener(
+          mapRef.current,
+          'click',
+          (mouseEvent) => {
+             // 클릭 시에는 중심 이동을 하지 않음
+            isClick.current = true; // 클릭 발생
+            rat = mouseEvent.latLng.getLat();
+            rng = mouseEvent.latLng.getLng();
+            setCoords({ lat: rat, lng: rng });
 
-              // 이전 마커가 있으면 지도에서 제거
-              if (markerRef.current) {
-                markerRef.current.setMap(null);
-              }
+            // 이전 마커가 있으면 지도에서 제거
+            if (markerRef.current) {
+              markerRef.current.setMap(null);
+            }
 
-              // 새 마커 생성 및 ref에 저장
-              markerRef.current = new window.kakao.maps.Marker({
-                position: mouseEvent.latLng,
-                map: mapRef.current
-              });
-        });
+            // 새 마커 생성 및 ref에 저장
+            markerRef.current = new window.kakao.maps.Marker({
+              position: mouseEvent.latLng,
+              map: mapRef.current
+            });
+          });
       });
     };
     document.head.appendChild(script);
@@ -98,6 +105,26 @@ function Home() {
       navigator.geolocation.clearWatch(watchID);
     };
   }, []);
+
+  // 위치 추적 때만 중심 이동 및 마커 표시
+  useEffect(() => {
+    if (coords.lat && coords.lng && mapRef.current && !isClick.current) {
+      // 위치 추적 때만 중심을 이동하고 마커를 표시
+      mapRef.current.setCenter(new window.kakao.maps.LatLng(coords.lat, coords.lng));
+
+      // 마커가 없으면 새로 생성
+      if (!markerRef.current) {
+        markerRef.current = new window.kakao.maps.Marker({
+          position: new window.kakao.maps.LatLng(coords.lat, coords.lng),
+          map: mapRef.current
+        });
+      } else {
+        // 기존 마커의 위치를 갱신
+        markerRef.current.setPosition(new window.kakao.maps.LatLng(coords.lat, coords.lng));
+      }
+    }
+  }, [coords]);  // coords가 변경될 때마다 실행
+
 
   return (
     <Container
@@ -192,7 +219,67 @@ function BusInfo({ lat, lng }) {
                 return { busNo, busType, arriveTime: arriveTime2 };
               });
 
-              setBusData(busInfo);
+              // 정렬 함수
+              const sortBusData = (a, b) => {
+                const busNoA = String(a.busNo);
+                const busNoB = String(b.busNo);
+
+                // 1. 번호-번호 우선 (먼저 숫자 비교, -가 없으면 숫자만 비교)
+                const [mainA, subA] = busNoA.split("-");
+                const [mainB, subB] = busNoB.split("-");
+
+                // 2. 번호가 더 작은 것이 우선
+                if (parseInt(mainA, 10) !== parseInt(mainB, 10)) {
+                  return parseInt(mainA, 10) - parseInt(mainB, 10);
+                }
+
+                // 3. 번호-번호일 경우, -뒤의 번호가 더 작은 것이 우선
+                if (subA && subB) {
+                  if (parseInt(subA, 10) !== parseInt(subB, 10)) {
+                    return parseInt(subA, 10) - parseInt(subB, 10);
+                  }
+                } else if (subA) {
+                  return -1; // subA가 있으면 더 우선
+                } else if (subB) {
+                  return 1; // subB가 있으면 더 우선
+                }
+
+                // 4. 문자로 시작한 버스 번호는 뒤로
+                const isAlphaA = /^[a-zA-Z]/.test(busNoA);
+                const isAlphaB = /^[a-zA-Z]/.test(busNoB);
+                if (isAlphaA !== isAlphaB) {
+                  return isAlphaA ? 1 : -1;
+                }
+
+                // 5. 동일한 번호일 때 도착 시간 비교
+                if (a.arriveTime !== b.arriveTime) {
+                  return a.arriveTime.localeCompare(b.arriveTime);
+                }
+
+                return 0; // 같은 경우에는 변경하지 않음
+              };
+
+              // 정렬 적용
+              const sortedBusData = busInfo.sort(sortBusData);
+
+              // 동일한 번호에서 가장 빨리 도착하는 버스만 남기기
+              const uniqueBuses = [];
+              const busNosSeen = new Map();
+
+              sortedBusData.forEach((bus) => {
+                const busNo = String(bus.busNo);
+
+                // -번호에서 번호만 추출
+                const [mainBusNo] = busNo.split("-");
+
+                // 첫 번째 등장 버스를 저장
+                if (!busNosSeen.has(mainBusNo) || bus.arriveTime < busNosSeen.get(mainBusNo).arriveTime) {
+                  busNosSeen.set(mainBusNo, bus);
+                }
+              });
+
+              // `busNosSeen` Map의 값만 남기기
+              setBusData(Array.from(busNosSeen.values()));
             });
         });
     }
@@ -235,5 +322,4 @@ function BusInfo({ lat, lng }) {
     </TableContainer>
   );
 }
-
 export default Home;
