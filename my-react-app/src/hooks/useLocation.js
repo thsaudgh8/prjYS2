@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-=======
-// useLocation.js
-
->>>>>>> f6330e6e1a2ca254b6b87a7a668c8db2cbcf7a64
 import { useState, useEffect } from "react";
 
 export function useLocation() {
