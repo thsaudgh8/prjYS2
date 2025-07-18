@@ -44,19 +44,27 @@ function HomeWeather({ nx, ny }) {
   if (error) return <Typography color="error">날씨 정보 오류: {error}</Typography>;
 
   const current = weatherData[0] || {};
+  const getWeatherIcon = (sky, pty) => {
+    const ptyNum = Number(pty) || 0;
+    if (ptyNum === 1 || ptyNum === 4 || ptyNum === 5) return '🌧️';  // 비, 소나기, 빗방울과 눈날림
+    if (ptyNum === 2 || ptyNum === 3) return '❄️';                  // 비/눈, 눈
+    if (sky === '1') return '☀️';                                  // 맑음
+    if (sky === '3' || sky === '4') return '☁️';                   // 흐림, 구름많음
+    return '❓';
+  };
 
   // ✅ 강수 예보 메시지 생성
   const getRainMessage = () => {
     const rainHours = weatherData
-      .filter(item => item.pty && item.pty !== '0')
-      .map(item => `${item.time.slice(0, 2)}시`);
+      .filter(item => Number(item.pty) !== 0)
+      .map(item => item.time.slice(0, 2));
 
     if (rainHours.length === 0) return null;
 
-    const start = rainHours[0];
-    const end = rainHours[rainHours.length - 1];
+    const startHour = rainHours[0];
+    const endHour = rainHours[rainHours.length - 1];
 
-    return `${start}부터 ${end}까지 비가 내릴 예정이에요. 우산 챙기세요 ☔️`;
+    return `${startHour}시부터 ${endHour}시까지 비가 내릴 예정이에요. 우산 챙기세요 ☔️`;
   };
 
   return (
@@ -79,7 +87,7 @@ function HomeWeather({ nx, ny }) {
         </Typography>
         <Typography variant="h4" fontWeight="bold" lineHeight={1} mb={0.5}>
           {current.temp ?? '--'}°C{' '}
-          {current.sky === '1' ? '☀️' : current.sky === '3' ? '☁️' : '🌧️'}
+          {getWeatherIcon(current.sky, current.pty)}
         </Typography>
 
         {/* ✅ 강수 메시지 출력 */}
@@ -99,8 +107,7 @@ function HomeWeather({ nx, ny }) {
           justifyContent: 'center',
         }}
       >
-        {weatherData.map(({ time, temp, sky }, idx) => {
-          // time 예: '1000' => 시: '10', 분: '00'
+        {weatherData.map(({ time, temp, sky, pty }) => {
           const hour = time.slice(0, 2);
           const minute = time.slice(2, 4);
           const timeString = `${hour}:${minute}`;
@@ -123,7 +130,7 @@ function HomeWeather({ nx, ny }) {
                 {timeString}
               </Typography>
               <Typography variant="body1" lineHeight={1} mb={0.2}>
-                {sky === '1' ? '☀️' : sky === '3' ? '☁️' : '🌧️'}
+                {getWeatherIcon(sky, pty)}
               </Typography>
               <Typography variant="caption" lineHeight={1}>
                 {temp}°C
