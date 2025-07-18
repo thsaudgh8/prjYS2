@@ -1,15 +1,32 @@
 import React from 'react';
 import { Card, Box, Typography } from '@mui/material';
 
-// 등급 구분 함수
-function getPm10Grade(pm10) {
-  if (pm10 <= 30) return { level: '좋음', color: '#4caf50' };
-  if (pm10 <= 80) return { level: '보통', color: '#ffeb3b' };
-  if (pm10 <= 150) return { level: '나쁨', color: '#ff9800' };
-  return { level: '매우 나쁨', color: '#f44336' };
+function getGradeColor(grade) {
+  switch (grade) {
+    case '좋음':
+      return 'green';
+    case '보통':
+      return 'orange';
+    case '나쁨':
+      return 'red';
+    default:
+      return 'gray';
+  }
 }
 
-function HomeDust({ pm10Hourly = [], pm25Hourly = [], stationName = '측정소 정보 없음' }) {
+function getDustGrade(pm10) {
+  if (pm10 <= 30) return '좋음';
+  if (pm10 <= 80) return '보통';
+  return '나쁨';
+}
+
+function getMaskMessage(grade) {
+  if (grade === '좋음') return '마스크 착용 필요 없음';
+  if (grade === '보통') return '마스크 착용 권장';
+  return '마스크 착용 필수';
+}
+
+function HomeDust({ pm10Hourly = [], pm25Hourly = [] }) {
   return (
     <Card
       sx={{
@@ -21,6 +38,8 @@ function HomeDust({ pm10Hourly = [], pm25Hourly = [], stationName = '측정소 �
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
+        maxHeight: 300,
+        overflowY: 'auto',
       }}
       elevation={4}
     >
@@ -28,54 +47,74 @@ function HomeDust({ pm10Hourly = [], pm25Hourly = [], stationName = '측정소 �
         미세먼지 정보
       </Typography>
 
-      <Typography variant="body2" fontWeight="bold" mb={1}>
-        측정소: {stationName}
-      </Typography>
-
       <Box
         sx={{
           display: 'flex',
-          gap: 0.5,
-          flexWrap: 'wrap',
-          justifyContent: 'center',
+          gap: 1,
+          flexWrap: 'nowrap',
+          overflowX: 'auto',
+          pb: 1,
         }}
       >
         {pm10Hourly.map((pm10, idx) => {
-          const { level, color } = getPm10Grade(pm10);
+          const pm25 = pm25Hourly[idx];
+          const grade = getDustGrade(pm10);
+          const color = getGradeColor(grade);
+          const maskMsg = getMaskMessage(grade);
+
           return (
             <Card
               key={idx}
               sx={{
-                width: 60,
-                bgcolor: 'rgba(255, 255, 255, 0.85)',
+                width: 80,
+                minHeight: 180,
+                bgcolor: 'rgba(255, 255, 255, 0.9)',
                 color: '#3e2723',
-                p: 0.5,
+                p: 1,
                 borderRadius: 2,
                 textAlign: 'center',
                 flexShrink: 0,
               }}
-              elevation={1}
+              elevation={2}
             >
               <Typography variant="caption" lineHeight={1}>
                 {idx + 1}시 후
               </Typography>
+
               <Typography
                 variant="body2"
                 fontWeight="bold"
-                lineHeight={1}
-                mb={0.2}
-                sx={{ color }}
+                color={color}
+                lineHeight={1.2}
+                sx={{ mt: 0.5 }}
               >
-                PM10
+                PM10: {pm10}㎍/㎥
               </Typography>
-              <Typography variant="body1" lineHeight={1}>
-                {pm10}㎍/㎥
+
+              <Typography variant="caption" lineHeight={1}>
+                PM2.5: {pm25}㎍/㎥
               </Typography>
-              <Typography variant="caption" color="textSecondary" lineHeight={1}>
-                PM2.5: {pm25Hourly[idx]}㎍/㎥
+
+              <Typography
+                variant="caption"
+                sx={{
+                  fontWeight: 'bold',
+                  color: color,
+                  mt: 0.5,
+                  display: 'block',
+                }}
+              >
+                {grade}
               </Typography>
-              <Typography variant="caption" fontWeight="bold" sx={{ color }}>
-                {level}
+
+              <Typography
+                variant="caption"
+                sx={{
+                  whiteSpace: 'pre-line',
+                  display: 'block',
+                }}
+              >
+                {maskMsg}
               </Typography>
             </Card>
           );
