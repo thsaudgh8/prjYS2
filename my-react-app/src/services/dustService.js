@@ -54,4 +54,8 @@ export async function fetchGyeonggiAvgDust() {
     console.error('경기도 평균 미세먼지 정보 실패:', err);
     return null;
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> f6330e6e1a2ca254b6b87a7a668c8db2cbcf7a64

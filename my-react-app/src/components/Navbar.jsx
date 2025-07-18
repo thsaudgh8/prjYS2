@@ -25,8 +25,10 @@ function Navbar() {
         position="static"
         color="primary"
         sx={{
-          width: { xs: '100%', md: '80%' },
-          margin: { xs: 0, md: '0 auto' },
+          width: '80%',
+          margin: '0 auto',
+          borderRadius: 2,
+          boxShadow: 3,
         }}
       >
         <Toolbar>

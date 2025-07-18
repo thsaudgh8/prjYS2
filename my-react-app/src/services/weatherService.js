@@ -1,5 +1,6 @@
 const SERVICE_KEY = import.meta.env.VITE_WEATHER_API_KEY;
 const BASE_URL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getVilageFcst';
+const ULTRA_SHORT_FORECAST_URL = 'https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtFcst';
 
 // 기준 날짜/시간 - 0200 기준 (최고/최저용)
 function getBaseDateTime() {
@@ -186,4 +187,59 @@ dailyDates.forEach((date) => {
 });
 
   return Object.values(dailyData);
+}
+
+// 초단기 예보 기준 시각 계산 함수
+function getUltraSrtBaseDateTime() {
+  const now = new Date();
+  let baseDate = now.toISOString().slice(0, 10).replace(/-/g, '');
+  let hour = now.getHours();
+  const minutes = now.getMinutes();
+
+  if (minutes < 45) {
+    hour -= 1;
+    if (hour < 0) {
+      hour = 23;
+      const yesterday = new Date(now);
+      yesterday.setDate(now.getDate() - 1);
+      baseDate = yesterday.toISOString().slice(0, 10).replace(/-/g, '');
+    }
+  }
+
+  const baseTime = `${hour.toString().padStart(2, '0')}30`;
+  return { baseDate, baseTime };
+}
+
+// ✅ 초단기 예보 (1시간 단위: 기온/하늘상태/강수형태)
+export async function fetchUltraShortForecast(nx, ny) {
+  const { baseDate, baseTime } = getUltraSrtBaseDateTime();
+  const url = `${ULTRA_SHORT_FORECAST_URL}?serviceKey=${SERVICE_KEY}&pageNo=1&numOfRows=1000&dataType=JSON&base_date=${baseDate}&base_time=${baseTime}&nx=${nx}&ny=${ny}`;
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('초단기예보 API 요청 실패');
+
+  const data = await res.json();
+
+  if (!data.response || data.response.header.resultCode !== '00') {
+    throw new Error('초단기예보 API 호출 실패');
+  }
+
+  const items = data.response.body.items.item ?? [];
+
+  const hourlyMap = {};
+  items.forEach(({ fcstTime, category, fcstValue }) => {
+    if (!['T1H', 'SKY', 'PTY'].includes(category)) return;
+    if (!hourlyMap[fcstTime]) hourlyMap[fcstTime] = {};
+    hourlyMap[fcstTime][category] = fcstValue;
+  });
+
+  return Object.entries(hourlyMap)
+    .map(([time, val]) => ({
+      time,
+      temp: val.T1H,
+      sky: val.SKY,
+      pty: val.PTY,
+    }))
+    .sort((a, b) => a.time.localeCompare(b.time))
+    .slice(0, 6);
 }
