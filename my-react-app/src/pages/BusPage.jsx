@@ -12,11 +12,13 @@ var rat = null;
 var rng = null;
 var nodenm = null;
 
+
 function Home() {
   const mapContainer = useRef(null);
   const mapRef = useRef(null);
   const markerRef = useRef(null);   // 마커 참조를 위한 useRef
   const [coords, setCoords] = useState({ lat: null, lng: null });
+  const isClick = useRef(false); // 클릭 여부 추적
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -35,6 +37,8 @@ function Home() {
           mapRef.current,
           'click',
           (mouseEvent) => {
+             // 클릭 시에는 중심 이동을 하지 않음
+            isClick.current = true; // 클릭 발생
             rat = mouseEvent.latLng.getLat();
             rng = mouseEvent.latLng.getLng();
             setCoords({ lat: rat, lng: rng });
@@ -68,17 +72,24 @@ function Home() {
     };
   }, []);
 
-  // coords가 변경될 때마다 지도 중심 갱신
-  navigator.geolocation.watchPosition((pos) => {
-    const lat = pos.coords.latitude;
-    const lng = pos.coords.longitude;
-    setCoords({ lat, lng });
+  // 위치 추적 때만 중심 이동 및 마커 표시
+  useEffect(() => {
+    if (coords.lat && coords.lng && mapRef.current && !isClick.current) {
+      // 위치 추적 때만 중심을 이동하고 마커를 표시
+      mapRef.current.setCenter(new window.kakao.maps.LatLng(coords.lat, coords.lng));
 
-    // 위치추적 때만 중심 이동
-    if (mapRef.current) {
-      mapRef.current.setCenter(new window.kakao.maps.LatLng(lat, lng));
+      // 마커가 없으면 새로 생성
+      if (!markerRef.current) {
+        markerRef.current = new window.kakao.maps.Marker({
+          position: new window.kakao.maps.LatLng(coords.lat, coords.lng),
+          map: mapRef.current
+        });
+      } else {
+        // 기존 마커의 위치를 갱신
+        markerRef.current.setPosition(new window.kakao.maps.LatLng(coords.lat, coords.lng));
+      }
     }
-  });
+  }, [coords]);  // coords가 변경될 때마다 실행
 
 
   return (
