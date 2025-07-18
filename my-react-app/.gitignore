@@ -26,3 +26,6 @@ dist-ssr
 
 # 환경변수
 .env
+
+# PHP 백엔드 파일 무시
+*.php
