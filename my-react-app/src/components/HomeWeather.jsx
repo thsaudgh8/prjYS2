@@ -81,7 +81,15 @@ function HomeWeather({ nx, ny }) {
       }}
       elevation={4}
     >
-      <Box>
+      <Box
+        sx={{
+          display: { xs: 'flex', md: 'block' }, // xs(모바일)은 flex, md 이상은 기본 block
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: { xs: 'center', md: 'left' }, // 모바일에서 텍스트 중앙정렬, 데스크탑은 기본 왼쪽정렬
+        }}
+      >
         <Typography variant="h6" fontWeight="bold" mb={0.5}>
           현재 날씨
         </Typography>
@@ -97,6 +105,7 @@ function HomeWeather({ nx, ny }) {
           </Typography>
         )}
       </Box>
+
 
       {/* 시간별 날씨 카드 */}
       <Box
