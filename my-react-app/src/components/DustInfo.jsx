@@ -23,8 +23,4 @@ function DustInfo({ data }) {
   );
 }
 
-<<<<<<< HEAD
 export default DustInfo;
-=======
-export default DustInfo;
->>>>>>> f6330e6e1a2ca254b6b87a7a668c8db2cbcf7a64
