@@ -26,3 +26,4 @@ dist-ssr
 
 # 환경변수
 .env
+.php
