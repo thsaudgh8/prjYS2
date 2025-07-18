@@ -8,6 +8,7 @@ const SERVICE_KEY = import.meta.env.VITE_BUS_KEY; // 실제 서비스키로 교�
 const map_key = import.meta.env.VITE_MAP_KEY; // 실제 지도 API 키로 교체
 var rat = null;
 var rng = null;
+var nodenm = null;
 
 function Home() {
   const mapContainer = useRef(null);
@@ -98,7 +99,7 @@ function Home() {
           ref={mapContainer}
           style={{ width: '700px', height: '700px', marginRight: '0px' }}
         />
-        <div style={{ minWidth: '400px', maxWidth: '100px', textAlign: 'center' }}>
+        <div style={{ minWidth: '700px', maxWidth: '100px', textAlign: 'center' }}>
           <BusInfo lat={coords.lat} lng={coords.lng} />
         </div>
       </div>
@@ -158,6 +159,7 @@ function BusInfo({ lat, lng }) {
               }
 
               const busInfo = items.map((bus) => {
+                nodenm = items[0].nodenm;
                 const busNo = bus.routeno;
                 let arriveTime2 = Math.floor(bus.arrtime / 60);
                 let busType = bus.routetp;
@@ -182,6 +184,9 @@ function BusInfo({ lat, lng }) {
     <TableContainer component={Paper} sx={{ maxHeight: '700px', overflow: 'auto' }}>
       <Table sx={{ minWidth: 200 }} aria-label="bus info table">
         <TableHead>
+          <TableRow>
+            <TableCell>{nodenm}</TableCell>
+          </TableRow>
           <TableRow>
             <TableCell>버스종류</TableCell>
             <TableCell>버스번호</TableCell>
