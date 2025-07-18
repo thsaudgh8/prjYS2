@@ -103,16 +103,13 @@ function Home() {
         alignItems: 'center',
       }}
     >
-      <Typography variant="h5" gutterBottom>
-        버스 위치 지도
-      </Typography>
       <div style={{ display: 'flex', flexDirection: 'row' }}>
         <div
           id="map"
           ref={mapContainer}
-          style={{ width: '700px', height: '700px', marginRight: '0px' }}
+          style={{ width: '700px', height: '700px', marginRight: '100px' }}
         />
-        <div style={{ minWidth: '700px', maxWidth: '100px', textAlign: 'center' }}>
+        <div style={{ minWidth: '700px', textAlign: 'center' }}>
           <BusInfo lat={coords.lat} lng={coords.lng} />
         </div>
       </div>
