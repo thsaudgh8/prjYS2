@@ -34,7 +34,7 @@ function DustPage() {
             justifyContent: 'center',
             gap: '2rem',
             paddingTop: '1rem',
-            maxWidth: '900px',
+            maxWidth: '1000px',
             margin: '0 auto',
           }}
         >
@@ -49,7 +49,7 @@ function DustPage() {
             }}
           >
             <h3 style={{ marginTop: 0 }}>{userCity} 미세먼지 정보</h3>
-            <DustInfo data={localDust} />
+            <DustInfo data={localDust} /> {/* 여기 내부에 DustLevelBar 포함됨 */}
           </div>
 
           <div
