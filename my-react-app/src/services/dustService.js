@@ -8,7 +8,7 @@ export async function fetchDustData(city = '수원', sido = '경기') {
     );
     const data = await response.json();
 
-    // stationName에 city 이름 포함된 첫 번째 데이터 찾기
+
     const target = data?.response?.body?.items?.find(item =>
       item.stationName.includes(city)
     );

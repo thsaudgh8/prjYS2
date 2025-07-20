@@ -1,32 +1,25 @@
 import React from 'react';
 import { Card, Box, Typography } from '@mui/material';
 
-function getGradeColor(grade) {
-  switch (grade) {
-    case '좋음':
-      return 'green';
-    case '보통':
-      return 'orange';
-    case '나쁨':
-      return 'red';
-    default:
-      return 'gray';
-  }
-}
+// 현재 시각 기준 라벨 생성 함수
+const getTimeLabels = (count = 6) => {
+  const now = new Date();
+  return Array.from({ length: count }, (_, i) => {
+    const hour = (now.getHours() + i + 1) % 24;
+    return `${hour}시 (${i + 1}시간 후)`;
+  });
+};
 
-function getDustGrade(pm10) {
-  if (pm10 <= 30) return '좋음';
-  if (pm10 <= 80) return '보통';
-  return '나쁨';
-}
-
-function getMaskMessage(grade) {
-  if (grade === '좋음') return '마스크 착용 필요 없음';
-  if (grade === '보통') return '마스크 착용 권장';
-  return '마스크 착용 필수';
-}
+// 등급 및 메시지 판별 함수
+const getDustLevel = (pm10) => {
+  if (pm10 <= 30) return { level: '좋음', color: 'green', mask: '마스크 착용 필요 없음' };
+  if (pm10 <= 80) return { level: '보통', color: 'orange', mask: '마스크 착용 권고' };
+  return { level: '나쁨', color: 'red', mask: '마스크 착용 필수' };
+};
 
 function HomeDust({ pm10Hourly = [], pm25Hourly = [] }) {
+  const timeLabels = getTimeLabels(pm10Hourly.length);
+
   return (
     <Card
       sx={{
@@ -38,8 +31,6 @@ function HomeDust({ pm10Hourly = [], pm25Hourly = [] }) {
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
-        maxHeight: 300,
-        overflowY: 'auto',
       }}
       elevation={4}
     >
@@ -51,23 +42,20 @@ function HomeDust({ pm10Hourly = [], pm25Hourly = [] }) {
         sx={{
           display: 'flex',
           gap: 1,
-          flexWrap: 'nowrap',
           overflowX: 'auto',
           pb: 1,
+          pr: 1,
         }}
       >
         {pm10Hourly.map((pm10, idx) => {
-          const pm25 = pm25Hourly[idx];
-          const grade = getDustGrade(pm10);
-          const color = getGradeColor(grade);
-          const maskMsg = getMaskMessage(grade);
+          const pm25 = pm25Hourly[idx] || 0;
+          const { level, color, mask } = getDustLevel(pm10);
 
           return (
             <Card
               key={idx}
               sx={{
-                width: 80,
-                minHeight: 180,
+                minWidth: 90,
                 bgcolor: 'rgba(255, 255, 255, 0.9)',
                 color: '#3e2723',
                 p: 1,
@@ -77,44 +65,37 @@ function HomeDust({ pm10Hourly = [], pm25Hourly = [] }) {
               }}
               elevation={2}
             >
-              <Typography variant="caption" lineHeight={1}>
-                {idx + 1}시 후
+              <Typography variant="caption" display="block" fontWeight="bold">
+                {timeLabels[idx]}
+              </Typography>
+
+              <Typography
+                variant="subtitle1"
+                fontWeight="bold"
+                color={color}
+                sx={{ mt: 0.5, mb: 0.5 }}
+              >
+                PM10: {pm10}㎍/㎥
+              </Typography>
+
+              <Typography variant="body2" sx={{ mb: 0.2 }}>
+                PM2.5: {pm25}㎍/㎥
               </Typography>
 
               <Typography
                 variant="body2"
                 fontWeight="bold"
                 color={color}
-                lineHeight={1.2}
-                sx={{ mt: 0.5 }}
+                sx={{ whiteSpace: 'pre-line', lineHeight: 1.3 }}
               >
-                PM10: {pm10}㎍/㎥
-              </Typography>
-
-              <Typography variant="caption" lineHeight={1}>
-                PM2.5: {pm25}㎍/㎥
+                {level}
               </Typography>
 
               <Typography
                 variant="caption"
-                sx={{
-                  fontWeight: 'bold',
-                  color: color,
-                  mt: 0.5,
-                  display: 'block',
-                }}
+                sx={{ mt: 0.5, whiteSpace: 'pre-line', fontSize: '0.75rem' }}
               >
-                {grade}
-              </Typography>
-
-              <Typography
-                variant="caption"
-                sx={{
-                  whiteSpace: 'pre-line',
-                  display: 'block',
-                }}
-              >
-                {maskMsg}
+                {mask}
               </Typography>
             </Card>
           );
