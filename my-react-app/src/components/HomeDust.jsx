@@ -1,15 +1,19 @@
 import React from 'react';
 import { Card, Box, Typography } from '@mui/material';
 
-// 등급 구분 함수
-function getPm10Grade(pm10) {
-  if (pm10 <= 30) return { level: '좋음', color: '#4caf50' };
-  if (pm10 <= 80) return { level: '보통', color: '#ffeb3b' };
-  if (pm10 <= 150) return { level: '나쁨', color: '#ff9800' };
-  return { level: '매우 나쁨', color: '#f44336' };
-}
+function HomeDust({ pm10Hourly = [], pm25Hourly = [] }) {
+  const now = new Date();
+  const getHourLabel = (idx) => {
+    const hour = (now.getHours() + idx + 1) % 24;
+    return `${hour}시 (${idx + 1}시간 후)`;
+  };
 
-function HomeDust({ pm10Hourly = [], pm25Hourly = [], stationName = '측정소 정보 없음' }) {
+  const getGrade = (pm10) => {
+    if (pm10 <= 30) return { label: '좋음', color: 'green', advice: '마스크 착용\n필요 없음' };
+    if (pm10 <= 80) return { label: '보통', color: 'orange', advice: '마스크 착용\n권고' };
+    return { label: '나쁨', color: 'red', advice: '마스크 착용\n필수' };
+  };
+
   return (
     <Card
       sx={{
@@ -20,7 +24,6 @@ function HomeDust({ pm10Hourly = [], pm25Hourly = [], stationName = '측정소 �
         borderRadius: 2,
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
       }}
       elevation={4}
     >
@@ -28,55 +31,64 @@ function HomeDust({ pm10Hourly = [], pm25Hourly = [], stationName = '측정소 �
         미세먼지 정보
       </Typography>
 
-      <Typography variant="body2" fontWeight="bold" mb={1}>
-        측정소: {stationName}
-      </Typography>
-
       <Box
         sx={{
+          overflowX: 'auto',
           display: 'flex',
-          gap: 0.5,
-          flexWrap: 'wrap',
-          justifyContent: 'center',
+          gap: 1,
+          p: 1,
         }}
       >
         {pm10Hourly.map((pm10, idx) => {
-          const { level, color } = getPm10Grade(pm10);
+          const pm25 = pm25Hourly[idx];
+          const grade = getGrade(pm10);
           return (
             <Card
               key={idx}
               sx={{
                 width: 60,
+                minHeight: 190, // ✅ 높이 늘림
                 bgcolor: 'rgba(255, 255, 255, 0.85)',
                 color: '#3e2723',
-                p: 0.5,
+                p: 1.2, // ✅ 여백도 약간 늘림
                 borderRadius: 2,
                 textAlign: 'center',
                 flexShrink: 0,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
               }}
-              elevation={1}
+              elevation={2}
             >
-              <Typography variant="caption" lineHeight={1}>
-                {idx + 1}시 후
+              <Typography variant="caption" fontWeight="bold">
+                {getHourLabel(idx)}
               </Typography>
-              <Typography
-                variant="body2"
-                fontWeight="bold"
-                lineHeight={1}
-                mb={0.2}
-                sx={{ color }}
-              >
-                PM10
-              </Typography>
-              <Typography variant="body1" lineHeight={1}>
-                {pm10}㎍/㎥
-              </Typography>
-              <Typography variant="caption" color="textSecondary" lineHeight={1}>
-                PM2.5: {pm25Hourly[idx]}㎍/㎥
-              </Typography>
-              <Typography variant="caption" fontWeight="bold" sx={{ color }}>
-                {level}
-              </Typography>
+
+              <Box>
+                <Typography variant="body2" fontWeight="bold" color={grade.color}>
+                  PM10: {pm10}㎍/㎥
+                </Typography>
+                <Typography variant="caption">
+                  PM2.5: {pm25}㎍/㎥
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography
+                  variant="body2"
+                  fontWeight="bold"
+                  color={grade.color}
+                  sx={{ whiteSpace: 'pre-line', mt: 0.5 }}
+                >
+                  {grade.label}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  sx={{ whiteSpace: 'pre-line' }}
+                >
+                  {grade.advice}
+                </Typography>
+              </Box>
             </Card>
           );
         })}
