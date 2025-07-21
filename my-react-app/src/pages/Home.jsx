@@ -12,6 +12,18 @@ function Home() {
   const [map, setMap] = useState(null);
   const [kakaoLoaded, setKakaoLoaded] = useState(false);
 
+  // 🧭 수원 장안문 fallback 위치
+  const fallbackLocation = {
+    lat: 37.293999,
+    lon: 127.014083,
+    address: '경기도 수원시 팔달구 장안동',
+  };
+
+  // ✅ 사용할 위도/경도/주소 설정 (location 없으면 fallback 사용)
+  const finalLat = location?.lat || fallbackLocation.lat;
+  const finalLon = location?.lon || fallbackLocation.lon;
+  const finalAddress = address || fallbackLocation.address;
+
   // Kakao Map SDK 로딩
   useEffect(() => {
     if (window.kakao && window.kakao.maps) {
@@ -27,42 +39,36 @@ function Home() {
 
   // Kakao Map 초기화 및 주소 변환
   useEffect(() => {
-    if (!kakaoLoaded) return;
-    if (loading || !location?.lat || !location?.lon || !mapRef.current) return;
-
-    // 이미 지도 생성되어 있으면 새로 생성하지 않음
+    if (!kakaoLoaded || !mapRef.current) return;
     if (map) return;
 
     window.kakao.maps.load(() => {
       const container = mapRef.current;
       const options = {
-        center: new window.kakao.maps.LatLng(location.lat, location.lon),
+        center: new window.kakao.maps.LatLng(finalLat, finalLon),
         level: 4,
       };
       const newMap = new window.kakao.maps.Map(container, options);
       setMap(newMap);
 
       const marker = new window.kakao.maps.Marker({
-        position: new window.kakao.maps.LatLng(location.lat, location.lon),
+        position: new window.kakao.maps.LatLng(finalLat, finalLon),
       });
       marker.setMap(newMap);
 
       const geocoder = new window.kakao.maps.services.Geocoder();
-      geocoder.coord2Address(location.lon, location.lat, (result, status) => {
+      geocoder.coord2Address(finalLon, finalLat, (result, status) => {
         if (status === window.kakao.maps.services.Status.OK) {
           setAddress(result[0].address.address_name);
         } else {
-          setAddress('주소를 불러올 수 없습니다');
+          setAddress(fallbackLocation.address);
         }
       });
     });
-  }, [kakaoLoaded, loading, location, map]);
+  }, [kakaoLoaded, mapRef, map, finalLat, finalLon]);
 
-  if (loading) return <Typography>위치 정보를 불러오는 중...</Typography>;
-  if (error) return <Typography color="error">위치 정보 오류: {error}</Typography>;
-
-  // location이 있을 때만 nx, ny 계산 (기상청 격자 좌표)
-  const { nx, ny } = location ? convertLatLonToGrid(location.lat, location.lon) : { nx: null, ny: null };
+  // 기상청 격자 좌표 계산
+  const { nx, ny } = convertLatLonToGrid(finalLat, finalLon);
 
   // 임시 미세먼지 더미 데이터 (추후 실제 API 연동 필요)
   const pm10Hourly = [20, 25, 30, 35, 40, 45];
@@ -95,7 +101,7 @@ function Home() {
           <Typography variant="h6" fontWeight="bold">
             현위치 주소
           </Typography>
-          <Typography>{address}</Typography>
+          <Typography>{finalAddress}</Typography>
         </Box>
 
         <Box
